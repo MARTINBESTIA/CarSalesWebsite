@@ -20,6 +20,7 @@ import lombok.Setter;
 
 public class CarFuelType {
     @Id
+
     @Column(name = "car_fuel_type_id")
     private Long carFuelTypeId;
     @Column(name = "car_fuel_type_name", nullable = false)
