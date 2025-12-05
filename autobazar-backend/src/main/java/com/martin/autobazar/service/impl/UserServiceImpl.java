@@ -23,4 +23,8 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(newUser);
         return UserMapper.toUserDto(savedUser);
     }
+
+    public boolean checkPhoneUsed(UserDto userDto) {
+        
+    }
 }

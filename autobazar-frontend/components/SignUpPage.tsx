@@ -150,9 +150,38 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
     }
 
     setSubmitError('');
-    // Mock sign up logic
-    console.log('Sign up with:', formData);
-    onNavigate('dashboard');
+    
+    // Prepare payload
+    const payload = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password
+    };
+
+    // Send POST request
+    fetch('http://localhost:8080/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Sign up failed');
+        }
+        return response.json();
+      })
+      .then(() => {
+        console.log('Sign up successful');
+        onNavigate('dashboard');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setSubmitError('An error occurred. Please try again.');
+      });
   };
 
   // Helper that returns either error text or empty (no grey hints)
