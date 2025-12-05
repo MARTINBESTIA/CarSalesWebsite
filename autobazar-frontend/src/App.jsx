@@ -2,34 +2,108 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { NavBar } from '../components/NavBar';
+import { HomePage } from '../components/HomePage';
+import { SearchResultsPage } from '../components/SearchResultsPage';
+import { CarDetailPage } from '../components/CarDetailPage';
+import { SignInPage } from '../components/SignInPage';
+import { SignUpPage } from '../components/SignUpPage';
+import { DashboardPage } from '../components/DashboardPage';
 
-function App() {
-  const [count, setCount] = useState(0)
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1a2332', // Deep navy blue
+      contrastText: '#ffffff',
+    },
+    secondary: {
+      main: '#ff6f00', // Warm orange
+      contrastText: '#ffffff',
+    },
+    background: {
+      default: '#ffffff',
+      paper: '#ffffff',
+    },
+  },
+  shape: {
+    borderRadius: 8,
+  },
+  typography: {
+    fontFamily: 'Roboto, sans-serif',
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: '8px',
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: 'none',
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: '12px',
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '8px',
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          borderRadius: '8px',
+        },
+      },
+    },
+  },
+});
+
+export default function App() {
+  const [currentPage, setCurrentPage] = useState('home');
+  const [selectedCarId, setSelectedCarId] = useState(1);
+
+  const handleNavigate = (page, carId) => {
+    setCurrentPage(page);
+    if (carId !== undefined) {
+      setSelectedCarId(carId);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      {currentPage !== 'signin' && currentPage !== 'signup' && (
+        <NavBar onNavigate={handleNavigate} currentPage={currentPage} />
+      )}
+      
+      {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
+      {currentPage === 'search' && <SearchResultsPage onNavigate={handleNavigate} />}
+      {currentPage === 'detail' && <CarDetailPage carId={selectedCarId} />}
+      {currentPage === 'signin' && <SignInPage onNavigate={handleNavigate} />}
+      {currentPage === 'signup' && <SignUpPage onNavigate={handleNavigate} />}
+      {currentPage === 'dashboard' && <DashboardPage onNavigate={handleNavigate} />}
+    </ThemeProvider>
+  );
 }
-
-export default App
