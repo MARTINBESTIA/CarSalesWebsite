@@ -12,6 +12,18 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
+type SignUpField = 'firstName' | 'lastName' | 'email' | 'phone' | 'password' | 'confirmPassword';
+
+interface SignUpFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+}
+
 interface SignUpPageProps {
   onNavigate: (page: string) => void;
 }
@@ -27,14 +39,125 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
     acceptTerms: false
   });
 
+  const [errors, setErrors] = useState<Record<SignUpField, string>>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [submitError, setSubmitError] = useState('');
+
+  // New: compute single-field error string (pure)
+  const computeFieldError = (
+    field: SignUpField,
+    value: string | boolean,
+    allValues: SignUpFormData
+  ): string => {
+    const str = String(value || '');
+    switch (field) {
+      case 'firstName':
+      case 'lastName':
+        if (!str.trim()) return ''; // keep empty -> show info hint instead of error (onBlur will fill if still empty)
+        if (str.length < 2) return 'Must be at least 2 characters';
+        if (str.length >= 30) return 'Must be shorter than 30 characters';
+        return '';
+
+      case 'email':
+        if (!str.trim()) return '';
+        if (!str.includes('@')) return 'Email must contain @';
+        return '';
+
+      case 'phone':
+        if (!str.trim()) return '';
+        if (!str.startsWith('+')) return 'Phone number must start with +';
+        if (!/^\+\d{8,20}$/.test(str)) return 'Only digits after + (8-20 digits)';
+        return '';
+
+      case 'password':
+        if (!str) return '';
+        if (str.length < 8) return 'At least 8 characters';
+        if (str.length > 30) return 'Must be at most 30 characters';
+        return '';
+
+      case 'confirmPassword':
+        if (!str) return '';
+        if (str !== allValues.password) return 'Passwords do not match';
+        return '';
+    }
+
+    // ensure a string is always returned for TypeScript / safety
+    return '';
+  };
+
+  const validateField = (
+    field: SignUpField,
+    value: string | boolean,
+    allValues: SignUpFormData,
+  ) => {
+    const message = computeFieldError(field, value, allValues);
+
+    // Only mark as "Required" when the value is empty/whitespace.
+    if (!String(value).trim()) {
+      setErrors(prev => ({ ...prev, [field]: 'Required' }));
+      return;
+    }
+
+    // For non-empty values, set the computed message ('' clears the error)
+    setErrors(prev => ({ ...prev, [field]: message }));
+  };
+
+  const updateField = (field: string, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setSubmitError('');
+    // Don't validate on each keystroke — keep validation on blur and on submit
+  };
+
+  const handleBlur = (field: string) => {
+    validateField(field as SignUpField, formData[field as keyof typeof formData], formData as SignUpFormData);
+  };
+
+  const validateAllAndSet = (): Record<SignUpField, string> => {
+    const all = formData as SignUpFormData;
+    const newErrors: Record<SignUpField, string> = {
+      firstName: computeFieldError('firstName', all.firstName, all),
+      lastName: computeFieldError('lastName', all.lastName, all),
+      email: computeFieldError('email', all.email, all),
+      phone: computeFieldError('phone', all.phone, all),
+      password: computeFieldError('password', all.password, all),
+      confirmPassword: computeFieldError('confirmPassword', all.confirmPassword, all),
+    };
+
+    // Mark empty required fields explicitly as 'Required'
+    (Object.keys(newErrors) as SignUpField[]).forEach(k => {
+      const val = String((all as any)[k] || '').trim();
+      if (!val) newErrors[k] = 'Required';
+    });
+
+    setErrors(newErrors);
+    return newErrors;
+  };
+
   const handleSignUp = () => {
+    // Validate all fields before sign up
+    const newErrors = validateAllAndSet();
+    const hasErrors = Object.values(newErrors).some(e => e !== '');
+    if (hasErrors) {
+      setSubmitError('Fill all fields correctly before submitting.');
+      return;
+    }
+
+    setSubmitError('');
     // Mock sign up logic
     console.log('Sign up with:', formData);
     onNavigate('dashboard');
   };
 
-  const updateField = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  // Helper that returns either error text or empty (no grey hints)
+  const helperFor = (field: SignUpField) => {
+    return errors[field] || '';
   };
 
   return (
@@ -76,6 +199,9 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
                 label="First name"
                 value={formData.firstName}
                 onChange={(e) => updateField('firstName', e.target.value)}
+                onBlur={() => handleBlur('firstName')}
+                error={!!errors.firstName}
+                helperText={helperFor('firstName')}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -84,6 +210,9 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
                 label="Last name"
                 value={formData.lastName}
                 onChange={(e) => updateField('lastName', e.target.value)}
+                onBlur={() => handleBlur('lastName')}
+                error={!!errors.lastName}
+                helperText={helperFor('lastName')}
               />
             </Grid>
           </Grid>
@@ -94,6 +223,9 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
             type="email"
             value={formData.email}
             onChange={(e) => updateField('email', e.target.value)}
+            onBlur={() => handleBlur('email')}
+            error={!!errors.email}
+            helperText={helperFor('email')}
             sx={{ mb: 3 }}
           />
 
@@ -103,6 +235,9 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
             type="tel"
             value={formData.phone}
             onChange={(e) => updateField('phone', e.target.value)}
+            onBlur={() => handleBlur('phone')}
+            error={!!errors.phone}
+            helperText={helperFor('phone')}
             sx={{ mb: 3 }}
           />
 
@@ -112,6 +247,9 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
             type="password"
             value={formData.password}
             onChange={(e) => updateField('password', e.target.value)}
+            onBlur={() => handleBlur('password')}
+            error={!!errors.password}
+            helperText={helperFor('password')}
             sx={{ mb: 3 }}
           />
 
@@ -121,6 +259,9 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
             type="password"
             value={formData.confirmPassword}
             onChange={(e) => updateField('confirmPassword', e.target.value)}
+            onBlur={() => handleBlur('confirmPassword')}
+            error={!!errors.confirmPassword}
+            helperText={helperFor('confirmPassword')}
             sx={{ mb: 3 }}
           />
 
@@ -155,7 +296,7 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
             onClick={handleSignUp}
             disabled={!formData.acceptTerms}
             sx={{ 
-              mb: 3,
+              mb: 1,
               borderRadius: '8px',
               textTransform: 'none',
               py: 1.5
@@ -163,6 +304,18 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
           >
             Create account
           </Button>
+          {submitError && (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: '#d32f2f',
+                textAlign: 'center',
+                mb: 3
+              }}
+            >
+              {submitError}
+            </Typography>
+          )}
 
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">

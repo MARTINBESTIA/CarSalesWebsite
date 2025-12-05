@@ -1,9 +1,6 @@
 package com.martin.autobazar.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +17,7 @@ import lombok.Setter;
 
 public class CarFuelType {
     @Id
-
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "car_fuel_type_id")
     private Long carFuelTypeId;
     @Column(name = "car_fuel_type_name", nullable = false)
