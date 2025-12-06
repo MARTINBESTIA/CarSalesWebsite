@@ -82,12 +82,20 @@ const theme = createTheme({
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedCarId, setSelectedCarId] = useState(1);
+  const [userData, setUserData] = useState(null);
 
-  const handleNavigate = (page, carId) => {
+  const handleNavigate = (page, dataOrCarId) => {
     setCurrentPage(page);
-    if (carId !== undefined) {
-      setSelectedCarId(carId);
+    
+    // If second parameter is an object with user data, store it
+    if (dataOrCarId && typeof dataOrCarId === 'object' && dataOrCarId.firstName) {
+      setUserData(dataOrCarId);
+    } 
+    // Otherwise, treat it as a carId
+    else if (dataOrCarId !== undefined && typeof dataOrCarId === 'number') {
+      setSelectedCarId(dataOrCarId);
     }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -103,7 +111,7 @@ export default function App() {
       {currentPage === 'detail' && <CarDetailPage carId={selectedCarId} />}
       {currentPage === 'signin' && <SignInPage onNavigate={handleNavigate} />}
       {currentPage === 'signup' && <SignUpPage onNavigate={handleNavigate} />}
-      {currentPage === 'dashboard' && <DashboardPage onNavigate={handleNavigate} />}
+      {currentPage === 'dashboard' && <DashboardPage onNavigate={handleNavigate} userData={userData} />}
     </ThemeProvider>
   );
 }

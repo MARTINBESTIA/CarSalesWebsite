@@ -25,7 +25,7 @@ interface SignUpFormData {
 }
 
 interface SignUpPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, userData?: any) => void;
 }
 
 export function SignUpPage({ onNavigate }: SignUpPageProps) {
@@ -195,7 +195,12 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
       }
 
       console.log('Sign up successful');
-      onNavigate('dashboard');
+      onNavigate('dashboard', {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone
+      });
     } catch (error) {
       console.error('Error:', error);
       setSubmitError('An error occurred. Please try again.');

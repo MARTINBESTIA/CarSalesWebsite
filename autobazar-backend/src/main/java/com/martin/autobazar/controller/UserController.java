@@ -36,4 +36,9 @@ public class UserController {
         return userService.phoneExists(phone);
     }
 
+    @DeleteMapping("/{email}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String email) {
+        userService.deleteUser(email);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 }

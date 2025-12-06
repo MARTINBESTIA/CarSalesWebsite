@@ -15,9 +15,13 @@ import {
   ListItemText,
   Paper,
   Chip,
-  IconButton
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PersonIcon from '@mui/icons-material/Person';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import EventIcon from '@mui/icons-material/Event';
@@ -27,17 +31,35 @@ import { mockCars } from '../utils/mockData';
 
 interface DashboardPageProps {
   onNavigate: (page: string, carId?: number) => void;
+  userData?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
 }
 
-export function DashboardPage({ onNavigate }: DashboardPageProps) {
+export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
   const [selectedSection, setSelectedSection] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [profileData, setProfileData] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567'
+    firstName: userData?.firstName || 'John',
+    lastName: userData?.lastName || 'Doe',
+    email: userData?.email || 'john.doe@example.com',
+    phone: userData?.phone || '+1 (555) 123-4567'
   });
+
+  useEffect(() => {
+    if (userData) {
+      setProfileData({
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        phone: userData.phone
+      });
+    }
+  }, [userData]);
 
   const savedCars = mockCars.slice(0, 3);
   const reservations = mockCars.slice(3, 5);
@@ -48,6 +70,29 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
     { id: 'reservations', label: 'My reservations', icon: <EventIcon /> },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon /> }
   ];
+
+  const handleDeleteUser = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/users/${encodeURIComponent(profileData.email)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Delete failed');
+      }
+
+      console.log('User deleted successfully');
+      onNavigate('home');
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   return (
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
@@ -135,8 +180,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
                       label="Email"
                       type="email"
                       value={profileData.email}
-                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                      disabled={!isEditing}
+                      disabled={true}
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -149,6 +193,20 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
                     />
                   </Grid>
                 </Grid>
+
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setOpenDeleteDialog(true)}
+                  sx={{ 
+                    mt: 4,
+                    borderRadius: '8px',
+                    textTransform: 'none'
+                  }}
+                >
+                  Delete account
+                </Button>
               </Paper>
             )}
 
@@ -383,6 +441,38 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           </Grid>
         </Grid>
       </Container>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+      >
+        <DialogTitle>Delete Account</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mt: 2 }}>
+            Are you sure you want to delete your account? This action cannot be undone. All your data, saved cars, and reservations will be permanently deleted.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setOpenDeleteDialog(false)}
+            sx={{ textTransform: 'none' }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => {
+              setOpenDeleteDialog(false);
+              handleDeleteUser();
+            }}
+            color="error"
+            variant="contained"
+            sx={{ textTransform: 'none' }}
+          >
+            Delete account
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
