@@ -5,6 +5,7 @@ import com.martin.autobazar.entity.User;
 import com.martin.autobazar.mapper.UserMapper;
 import com.martin.autobazar.repository.UserRepository;
 import com.martin.autobazar.service.UserService;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 
@@ -19,12 +20,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(UserDto userDto) {
-        User newUser = UserMapper.toUser(userDto);
-        User savedUser = userRepository.save(newUser);
+        User user = UserMapper.toUser(userDto);
+        User savedUser = userRepository.save(user);
         return UserMapper.toUserDto(savedUser);
     }
 
-    public boolean checkPhoneUsed(UserDto userDto) {
-        
+    @Override
+    public boolean emailExists(String email) {
+        return userRepository.findByEmail(email) != null;
+    }
+
+    @Override
+    public boolean phoneExists(String phone) {
+        return userRepository.findByPhone(phone) != null;
     }
 }

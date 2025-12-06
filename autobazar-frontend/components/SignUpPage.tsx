@@ -140,7 +140,7 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
     return newErrors;
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     // Validate all fields before sign up
     const newErrors = validateAllAndSet();
     const hasErrors = Object.values(newErrors).some(e => e !== '');
@@ -150,38 +150,56 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
     }
 
     setSubmitError('');
-    
-    // Prepare payload
-    const payload = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      password: formData.password
-    };
 
-    // Send POST request
-    fetch('http://localhost:8080/api/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Sign up failed');
-        }
-        return response.json();
-      })
-      .then(() => {
-        console.log('Sign up successful');
-        onNavigate('dashboard');
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        setSubmitError('An error occurred. Please try again.');
+    try {
+      // Check if email already exists
+      const emailCheckResponse = await fetch(
+        `http://localhost:8080/api/users/email-exists?email=${encodeURIComponent(formData.email)}`
+      );
+      const emailExists = await emailCheckResponse.json();
+      if (emailExists) {
+        setSubmitError('Email already in use.');
+        return;
+      }
+
+      // Check if phone already exists
+      const phoneCheckResponse = await fetch(
+        `http://localhost:8080/api/users/phone-exists?phone=${encodeURIComponent(formData.phone)}`
+      );
+      const phoneExists = await phoneCheckResponse.json();
+      if (phoneExists) {
+        setSubmitError('Phone number already in use.');
+        return;
+      }
+
+      // Prepare payload
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password
+      };
+
+      // Send POST request
+      const response = await fetch('http://localhost:8080/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       });
+
+      if (!response.ok) {
+        throw new Error('Sign up failed');
+      }
+
+      console.log('Sign up successful');
+      onNavigate('dashboard');
+    } catch (error) {
+      console.error('Error:', error);
+      setSubmitError('An error occurred. Please try again.');
+    }
   };
 
   // Helper that returns either error text or empty (no grey hints)

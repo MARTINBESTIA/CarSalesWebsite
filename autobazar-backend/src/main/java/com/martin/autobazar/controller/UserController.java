@@ -27,5 +27,13 @@ public class UserController {
         UserDto savedUserDto = userService.createUser(userDto);
         return new ResponseEntity<>(savedUserDto, HttpStatus.CREATED);
     }
+    @GetMapping("/email-exists")
+    public boolean emailExists(@RequestParam String email) {
+        return userService.emailExists(email);
+    }
+    @GetMapping("/phone-exists")
+    public boolean phoneExists(@RequestParam String phone) {
+        return userService.phoneExists(phone);
+    }
 
 }
