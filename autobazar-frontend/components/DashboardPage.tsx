@@ -43,6 +43,7 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
   const [selectedSection, setSelectedSection] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [profileData, setProfileData] = useState({
     firstName: userData?.firstName || 'John',
     lastName: userData?.lastName || 'Doe',
@@ -91,6 +92,40 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
       onNavigate('home');
     } catch (error) {
       console.error('Error:', error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const payload = {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        email: profileData.email,
+        phone: profileData.phone,
+        password: ''
+      };
+
+      const response = await fetch(
+        `http://localhost:8080/api/users/${encodeURIComponent(profileData.email)}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Update failed');
+      }
+
+      console.log('Profile updated successfully');
+      setIsEditing(false);
+      setSubmitError('');
+    } catch (error) {
+      console.error('Error:', error);
+      setSubmitError('Failed to update profile. Please try again.');
     }
   };
 
@@ -145,7 +180,14 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
                   <Button
                     variant={isEditing ? 'contained' : 'outlined'}
                     color={isEditing ? 'secondary' : 'primary'}
-                    onClick={() => setIsEditing(!isEditing)}
+                    onClick={() => {
+                      if (isEditing) {
+                        handleSaveProfile();
+                      } else {
+                        setIsEditing(true);
+                        setSubmitError('');
+                      }
+                    }}
                     sx={{ 
                       borderRadius: '8px',
                       textTransform: 'none'
@@ -193,6 +235,19 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
                     />
                   </Grid>
                 </Grid>
+
+                {submitError && (
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: '#d32f2f',
+                      mt: 2,
+                      mb: 2
+                    }}
+                  >
+                    {submitError}
+                  </Typography>
+                )}
 
                 <Button
                   variant="contained"

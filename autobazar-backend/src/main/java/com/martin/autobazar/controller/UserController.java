@@ -41,4 +41,10 @@ public class UserController {
         userService.deleteUser(email);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
+    @PutMapping("/{email}")
+    public ResponseEntity<Void> updateUser(@PathVariable String email, @RequestBody UserDto userDto) {
+        userService.updateUser(email, userDto);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }

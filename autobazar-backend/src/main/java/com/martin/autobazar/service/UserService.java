@@ -9,4 +9,5 @@ public interface UserService {
     boolean emailExists(String email);
     boolean phoneExists(String phone);
     void deleteUser(String email);
+    void updateUser(String email, UserDto userDto);
 }

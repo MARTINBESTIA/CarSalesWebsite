@@ -41,4 +41,10 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(String email) {
         userRepository.deleteByEmail(email);
     }
+
+    @Override
+    @Transactional
+    public void updateUser(String email, UserDto userDto) {
+        userRepository.updateUserByEmail(email, userDto.getFirstName(), userDto.getLastName(), userDto.getPhone());
+    }
 }
