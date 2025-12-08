@@ -5,25 +5,62 @@ import {
   Typography, 
   TextField, 
   Button,
-  Checkbox,
-  FormControlLabel,
   Link
 } from '@mui/material';
 import { useState } from 'react';
 
 interface SignInPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, userData?: any) => void;
 }
 
 export function SignInPage({ onNavigate }: SignInPageProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
 
-  const handleSignIn = () => {
-    // Mock sign in logic
-    console.log('Sign in with:', email, password);
-    onNavigate('dashboard');
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setError('');
+  };
+
+  const handleSignIn = async () => {
+    setError('');
+    try {
+      // Login request
+      const loginRes = await fetch('http://localhost:8080/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      if (!loginRes.ok) {
+        setError('Invalid email or password.');
+        return;
+      }
+
+      const loginResult = await loginRes.json();
+      if (!loginResult) {
+        setError('Invalid email or password.');
+        return;
+      }
+
+      // Fetch user profile
+      const profileRes = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(formData.email)}`);
+      if (!profileRes.ok) {
+        setError('Failed to fetch user profile.');
+        return;
+      }
+      const userData = await profileRes.json();
+
+      onNavigate('dashboard', userData);
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    }
   };
 
   return (
@@ -50,20 +87,13 @@ export function SignInPage({ onNavigate }: SignInPageProps) {
           <Typography variant="h4" sx={{ mb: 1, textAlign: 'center' }}>
             Sign in
           </Typography>
-          <Typography 
-            variant="body1" 
-            color="text.secondary" 
-            sx={{ mb: 4, textAlign: 'center' }}
-          >
-            Welcome back! Please enter your details.
-          </Typography>
 
           <TextField
             fullWidth
             label="Email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={e => handleChange('email', e.target.value)}
             sx={{ mb: 3 }}
           />
 
@@ -71,30 +101,10 @@ export function SignInPage({ onNavigate }: SignInPageProps) {
             fullWidth
             label="Password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            sx={{ mb: 2 }}
+            value={formData.password}
+            onChange={e => handleChange('password', e.target.value)}
+            sx={{ mb: 3 }}
           />
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <FormControlLabel
-              control={
-                <Checkbox 
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  size="small"
-                />
-              }
-              label="Remember me"
-            />
-            <Link 
-              href="#" 
-              underline="hover"
-              sx={{ fontSize: '0.875rem' }}
-            >
-              Forgot password?
-            </Link>
-          </Box>
 
           <Button
             fullWidth
@@ -103,7 +113,7 @@ export function SignInPage({ onNavigate }: SignInPageProps) {
             size="large"
             onClick={handleSignIn}
             sx={{ 
-              mb: 3,
+              mb: 2,
               borderRadius: '8px',
               textTransform: 'none',
               py: 1.5
@@ -112,19 +122,25 @@ export function SignInPage({ onNavigate }: SignInPageProps) {
             Sign in
           </Button>
 
+          {error && (
+            <Typography variant="body2" sx={{ color: '#d32f2f', textAlign: 'center', mb: 2 }}>
+              {error}
+            </Typography>
+          )}
+
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               Don't have an account?{' '}
               <Link 
                 href="#" 
                 underline="hover"
-                onClick={(e) => {
+                onClick={e => {
                   e.preventDefault();
                   onNavigate('signup');
                 }}
                 sx={{ color: 'secondary.main' }}
               >
-                Create an account
+                Sign up
               </Link>
             </Typography>
           </Box>

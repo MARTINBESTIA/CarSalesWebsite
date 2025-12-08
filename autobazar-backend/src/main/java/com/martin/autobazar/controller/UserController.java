@@ -36,6 +36,16 @@ public class UserController {
         return userService.phoneExists(phone);
     }
 
+    @GetMapping("/{email}")
+    public ResponseEntity<UserDto> getUserByEmail(@PathVariable String email) {
+        UserDto userDto = userService.getUserByEmail(email);
+        userDto.setPassword("");
+        if (userDto == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(userDto, HttpStatus.OK);
+    }
+
     @DeleteMapping("/{email}")
     public ResponseEntity<Void> deleteUser(@PathVariable String email) {
         userService.deleteUser(email);
@@ -46,5 +56,15 @@ public class UserController {
     public ResponseEntity<Void> updateUser(@PathVariable String email, @RequestBody UserDto userDto) {
         userService.updateUser(email, userDto);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Boolean> login(@RequestBody UserDto userDto) {
+        boolean valid = userService.validateLogin(userDto.getEmail(), userDto.getPassword());
+        if (valid) {
+            return ResponseEntity.ok(true);
+        } else {
+            return new ResponseEntity<>(false, HttpStatus.UNAUTHORIZED);
+        }
     }
 }

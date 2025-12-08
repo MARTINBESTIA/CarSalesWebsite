@@ -10,4 +10,6 @@ public interface UserService {
     boolean phoneExists(String phone);
     void deleteUser(String email);
     void updateUser(String email, UserDto userDto);
+    UserDto getUserByEmail(String email);
+    boolean validateLogin(String email, String password);
 }

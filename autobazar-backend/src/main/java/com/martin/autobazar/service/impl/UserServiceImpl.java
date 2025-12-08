@@ -47,4 +47,18 @@ public class UserServiceImpl implements UserService {
     public void updateUser(String email, UserDto userDto) {
         userRepository.updateUserByEmail(email, userDto.getFirstName(), userDto.getLastName(), userDto.getPhone());
     }
+
+    @Override
+    public UserDto getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            return null;
+        }
+        return UserMapper.toUserDto(user);
+    }
+
+    @Override
+    public boolean validateLogin(String email, String password) {
+        return userRepository.existsByEmailAndPassword(email, password);
+    }
 }

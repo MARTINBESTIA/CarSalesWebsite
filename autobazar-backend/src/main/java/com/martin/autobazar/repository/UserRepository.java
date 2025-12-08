@@ -14,6 +14,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     public User findByEmail(String email);
     public User findByPhone(String phone);
     public void deleteByEmail(String email);
+    public boolean existsByEmailAndPassword(String email, String password);
 
     @Modifying
     @Query("UPDATE User u SET u.firstName = :firstName, u.lastName = :lastName, u.phone = :phone WHERE u.email = :email")
