@@ -63,12 +63,12 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
   }, [userData]);
 
   const savedCars = mockCars.slice(0, 3);
-  const reservations = mockCars.slice(3, 5);
+  const listings = mockCars.slice(3, 5);
 
   const menuItems = [
     { id: 'profile', label: 'My profile', icon: <PersonIcon /> },
     { id: 'saved', label: 'My saved cars', icon: <FavoriteIcon /> },
-    { id: 'reservations', label: 'My reservations', icon: <EventIcon /> },
+    { id: 'listings', label: 'My listings', icon: <EventIcon /> },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon /> }
   ];
 
@@ -332,19 +332,19 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
               </Box>
             )}
 
-            {selectedSection === 'reservations' && (
+            {selectedSection === 'listings' && (
               <Box>
                 <Paper sx={{ p: 3, mb: 3, borderRadius: '12px' }}>
                   <Typography variant="h5" sx={{ mb: 1 }}>
-                    My Reservations
+                    My Listings
                   </Typography>
                   <Typography color="text.secondary">
-                    {reservations.length} active reservations
+                    {listings.length} active listings
                   </Typography>
                 </Paper>
 
                 <Grid container spacing={3}>
-                  {reservations.map((car) => (
+                  {listings.map((car) => (
                     <Grid item xs={12} key={car.id}>
                       <Card 
                         sx={{ 
@@ -471,7 +471,7 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
                       <Box>
                         <Typography>Email notifications</Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Receive updates about your reservations and saved cars
+                          Receive updates about your listings and saved cars
                         </Typography>
                       </Box>
                       <Button variant="outlined" size="small" sx={{ textTransform: 'none' }}>
@@ -505,7 +505,7 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
         <DialogTitle>Delete Account</DialogTitle>
         <DialogContent>
           <Typography sx={{ mt: 2 }}>
-            Are you sure you want to delete your account? This action cannot be undone. All your data, saved cars, and reservations will be permanently deleted.
+            Are you sure you want to delete your account? This action cannot be undone. All your data, saved cars, and listings will be permanently deleted.
           </Typography>
         </DialogContent>
         <DialogActions>

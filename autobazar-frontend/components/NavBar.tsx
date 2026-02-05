@@ -12,7 +12,8 @@ export function NavBar({ onNavigate, currentPage }: NavBarProps) {
       position="sticky" 
       sx={{ 
         bgcolor: 'primary.main',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        borderRadius: 0,
       }}
     >
       <Container maxWidth="xl">
