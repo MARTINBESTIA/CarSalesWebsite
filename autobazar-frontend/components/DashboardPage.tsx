@@ -8,11 +8,6 @@ import {
   CardMedia,
   Button,
   TextField,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Paper,
   Chip,
   IconButton,
@@ -71,13 +66,6 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
 
   const savedCars = mockCars.slice(0, 3);
   const listings = mockCars.slice(3, 5);
-
-  const menuItems = [
-    { id: 'profile', label: 'My profile', icon: <PersonIcon /> },
-    { id: 'saved', label: 'My saved cars', icon: <FavoriteIcon /> },
-    { id: 'listings', label: 'My listings', icon: <EventIcon /> },
-    { id: 'settings', label: 'Settings', icon: <SettingsIcon /> }
-  ];
 
   const handleDeleteUser = async () => {
     try {
@@ -139,45 +127,12 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
   return (
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
       <Container maxWidth="xl">
-        <Typography variant="h4" sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ mb: 4, textAlign: 'center' }}>
           My Account
         </Typography>
 
-        <Grid container spacing={3}>
-          {/* Left Navigation */}
-          <Grid item xs={12} md={3}>
-            <Paper sx={{ borderRadius: '12px', overflow: 'hidden' }}>
-              <List>
-                {menuItems.map((item) => (
-                  <ListItem key={item.id} disablePadding>
-                    <ListItemButton
-                      selected={selectedSection === item.id}
-                      onClick={() => setSelectedSection(item.id)}
-                      sx={{
-                        py: 2,
-                        '&.Mui-selected': {
-                          bgcolor: 'rgba(255, 111, 0, 0.08)',
-                          borderLeft: '4px solid',
-                          borderColor: 'secondary.main',
-                          '&:hover': {
-                            bgcolor: 'rgba(255, 111, 0, 0.12)'
-                          }
-                        }
-                      }}
-                    >
-                      <ListItemIcon sx={{ color: selectedSection === item.id ? 'secondary.main' : 'inherit' }}>
-                        {item.icon}
-                      </ListItemIcon>
-                      <ListItemText primary={item.label} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            </Paper>
-          </Grid>
-
-          {/* Right Content */}
-          <Grid item xs={12} md={9}>
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ width: '100%', maxWidth: 1000 }}>
             {selectedSection === 'profile' && (
               <Paper sx={{ p: 4, borderRadius: '12px' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -500,8 +455,8 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
                 </Box>
               </Paper>
             )}
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
 
       {/* Delete Confirmation Dialog */}
