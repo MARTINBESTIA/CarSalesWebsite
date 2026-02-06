@@ -5,8 +5,10 @@ import {
   Typography, 
   TextField, 
   Button,
-  Link
+  Link,
+  IconButton
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useState } from 'react';
 
 interface SignInPageProps {
@@ -71,9 +73,25 @@ export function SignInPage({ onNavigate }: SignInPageProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        py: 8
+        py: 8,
+        position: 'relative'
       }}
     >
+      <IconButton
+        onClick={() => onNavigate('home')}
+        sx={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          color: 'primary.main',
+          '&:hover': {
+            bgcolor: 'rgba(0,0,0,0.05)'
+          }
+        }}
+      >
+        <ArrowBackIcon />
+      </IconButton>
+
       <Card 
         sx={{ 
           maxWidth: 480,
