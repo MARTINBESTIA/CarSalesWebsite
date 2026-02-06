@@ -1,12 +1,25 @@
 import { AppBar, Toolbar, Container, Button, Box, Typography } from '@mui/material';
+import { IconButton, Menu, MenuItem } from '@mui/material';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { useState } from 'react';
 
 interface NavBarProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, payload?: any) => void;
   currentPage: string;
+  isLoggedIn?: boolean;
+  userData?: any;
+  onLogout?: () => void;
+  onOpenDashboardSection?: (section: string) => void;
 }
 
-export function NavBar({ onNavigate, currentPage }: NavBarProps) {
+export function NavBar({ onNavigate, currentPage, isLoggedIn, onLogout, onOpenDashboardSection }: NavBarProps) {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const openMenu = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
+  const closeMenu = () => setAnchorEl(null);
+
   return (
     <AppBar 
       position="sticky" 
@@ -66,22 +79,53 @@ export function NavBar({ onNavigate, currentPage }: NavBarProps) {
             >
               Contact
             </Button>
-            <Button 
-              variant="contained"
-              color="secondary"
-              onClick={() => onNavigate('signin')}
-              sx={{ 
-                textTransform: 'none',
-                ml: 2,
-                borderRadius: '8px',
-                px: 3
-              }}
-            >
-              Sign in
-            </Button>
-          </Box>
-        </Toolbar>
-      </Container>
-    </AppBar>
-  );
-}
+
+            {!isLoggedIn && (
+              <Button 
+                variant="contained"
+                color="secondary"
+                onClick={() => onNavigate('signin')}
+                sx={{ 
+                  textTransform: 'none',
+                  ml: 2,
+                  borderRadius: '8px',
+                  px: 3
+                }}
+              >
+                Sign in
+              </Button>
+            )}
+
+            {isLoggedIn && (
+              <>
+                <IconButton
+                  onClick={openMenu}
+                  size="large"
+                  sx={{ color: 'inherit', ml: 2 }}
+                >
+                  <AccountCircleIcon />
+                  <ArrowDropDownIcon />
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={closeMenu}
+                >
+                  <MenuItem onClick={() => { closeMenu(); onOpenDashboardSection?.('profile'); }}>
+                    My Profile
+                  </MenuItem>
+                  <MenuItem onClick={() => { closeMenu(); onOpenDashboardSection?.('listings'); }}>
+                    My listings
+                  </MenuItem>
+                  <MenuItem onClick={() => { closeMenu(); onLogout?.(); }}>
+                    Log out
+                  </MenuItem>
+                </Menu>
+              </>
+            )}
+           </Box>
+         </Toolbar>
+       </Container>
+     </AppBar>
+   );
+ }

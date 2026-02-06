@@ -37,10 +37,11 @@ interface DashboardPageProps {
     email: string;
     phone: string;
   };
+  initialSection?: string | null;
 }
 
-export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
-  const [selectedSection, setSelectedSection] = useState('profile');
+export function DashboardPage({ onNavigate, userData, initialSection }: DashboardPageProps) {
+  const [selectedSection, setSelectedSection] = useState(initialSection || 'profile');
   const [isEditing, setIsEditing] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -61,6 +62,12 @@ export function DashboardPage({ onNavigate, userData }: DashboardPageProps) {
       });
     }
   }, [userData]);
+
+  useEffect(() => {
+    if (initialSection) {
+      setSelectedSection(initialSection);
+    }
+  }, [initialSection]);
 
   const savedCars = mockCars.slice(0, 3);
   const listings = mockCars.slice(3, 5);

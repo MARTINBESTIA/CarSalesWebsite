@@ -82,28 +82,58 @@ const theme = createTheme({
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedCarId, setSelectedCarId] = useState(1);
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState(() => {
+    const raw = localStorage.getItem('userData');
+    return raw ? JSON.parse(raw) : null;
+  });
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('isLoggedIn'));
+  const [dashboardSection, setDashboardSection] = useState(null);
 
   const handleNavigate = (page, dataOrCarId) => {
     setCurrentPage(page);
-    
-    // If second parameter is an object with user data, store it
+
+    // If second parameter is an object with user data, store it and mark logged in
     if (dataOrCarId && typeof dataOrCarId === 'object' && dataOrCarId.firstName) {
       setUserData(dataOrCarId);
+      setIsLoggedIn(true);
+      localStorage.setItem('userData', JSON.stringify(dataOrCarId));
+      localStorage.setItem('isLoggedIn', '1');
     } 
-    // Otherwise, treat it as a carId
+    // If second param is an object indicating a dashboard section
+    else if (dataOrCarId && typeof dataOrCarId === 'object' && dataOrCarId.section) {
+      setDashboardSection(dataOrCarId.section);
+    }
+    // Otherwise, if number -> carId
     else if (dataOrCarId !== undefined && typeof dataOrCarId === 'number') {
       setSelectedCarId(dataOrCarId);
     }
-    
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLogout = () => {
+    setUserData(null);
+    setIsLoggedIn(false);
+    localStorage.removeItem('userData');
+    localStorage.removeItem('isLoggedIn');
+    setCurrentPage('home');
   };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       {currentPage !== 'signin' && currentPage !== 'signup' && (
-        <NavBar onNavigate={handleNavigate} currentPage={currentPage} />
+        <NavBar 
+          onNavigate={handleNavigate} 
+          currentPage={currentPage} 
+          isLoggedIn={isLoggedIn}
+          userData={userData}
+          onLogout={handleLogout}
+          onOpenDashboardSection={(section) => {
+            setDashboardSection(section);
+            setCurrentPage('dashboard');
+          }}
+        />
       )}
       
       {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
@@ -111,7 +141,13 @@ export default function App() {
       {currentPage === 'detail' && <CarDetailPage carId={selectedCarId} />}
       {currentPage === 'signin' && <SignInPage onNavigate={handleNavigate} />}
       {currentPage === 'signup' && <SignUpPage onNavigate={handleNavigate} />}
-      {currentPage === 'dashboard' && <DashboardPage onNavigate={handleNavigate} userData={userData} />}
+      {currentPage === 'dashboard' && (
+        <DashboardPage 
+          onNavigate={handleNavigate} 
+          userData={userData} 
+          initialSection={dashboardSection}
+        />
+      )}
     </ThemeProvider>
   );
 }
