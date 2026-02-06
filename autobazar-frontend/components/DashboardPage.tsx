@@ -297,12 +297,27 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
             {selectedSection === 'listings' && (
               <Box>
                 <Paper sx={{ p: 3, mb: 3, borderRadius: '12px' }}>
-                  <Typography variant="h5" sx={{ mb: 1 }}>
-                    My Listings
-                  </Typography>
-                  <Typography color="text.secondary">
-                    {listings.length} active listings
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box>
+                      <Typography variant="h5" sx={{ mb: 1 }}>
+                        My Listings
+                      </Typography>
+                      <Typography color="text.secondary">
+                        {listings.length} active listings
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      onClick={() => onNavigate('addListing')}
+                      sx={{
+                        borderRadius: '8px',
+                        textTransform: 'none'
+                      }}
+                    >
+                      Add listing
+                    </Button>
+                  </Box>
                 </Paper>
 
                 <Grid container spacing={3}>

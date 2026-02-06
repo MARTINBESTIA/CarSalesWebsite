@@ -10,6 +10,7 @@ import { CarDetailPage } from '../components/CarDetailPage';
 import { SignInPage } from '../components/SignInPage';
 import { SignUpPage } from '../components/SignUpPage';
 import { DashboardPage } from '../components/DashboardPage';
+import { AddListingPage } from '../components/AddListingPage';
 
 const theme = createTheme({
   palette: {
@@ -122,7 +123,7 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {currentPage !== 'signin' && currentPage !== 'signup' && (
+      {currentPage !== 'signin' && currentPage !== 'signup' && currentPage !== 'addListing' && (
         <NavBar 
           onNavigate={handleNavigate} 
           currentPage={currentPage} 
@@ -148,6 +149,7 @@ export default function App() {
           initialSection={dashboardSection}
         />
       )}
+      {currentPage === 'addListing' && <AddListingPage onNavigate={handleNavigate} />}
     </ThemeProvider>
   );
 }
