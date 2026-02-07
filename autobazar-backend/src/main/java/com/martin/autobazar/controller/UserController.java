@@ -1,11 +1,7 @@
 package com.martin.autobazar.controller;
 
 import com.martin.autobazar.dto.UserDto;
-import com.martin.autobazar.entity.User;
-import com.martin.autobazar.repository.UserRepository;
 import com.martin.autobazar.service.UserService;
-import com.martin.autobazar.service.impl.UserServiceImpl;
-import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

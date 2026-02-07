@@ -65,7 +65,7 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
   }, [initialSection]);
 
   const savedCars = mockCars.slice(0, 3);
-  const listings = mockCars.slice(3, 5);
+  const listings: typeof mockCars = [];
 
   const handleDeleteUser = async () => {
     try {
@@ -320,75 +320,96 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
                   </Box>
                 </Paper>
 
-                <Grid container spacing={3}>
-                  {listings.map((car) => (
-                    <Grid item xs={12} key={car.id}>
-                      <Card 
-                        sx={{ 
-                          display: 'flex',
-                          borderRadius: '12px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
-                        }}
-                      >
-                        <CardMedia
-                          component="img"
-                          sx={{ width: 240, objectFit: 'cover' }}
-                          image={car.image}
-                          alt={`${car.brand} ${car.model}`}
-                        />
-                        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                          <CardContent sx={{ flex: '1 0 auto' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                              <Box>
-                                <Typography variant="h6">
-                                  {car.brand} {car.model}
-                                </Typography>
-                                <Chip 
-                                  label="Reserved" 
-                                  color="success" 
-                                  size="small" 
-                                  sx={{ mt: 1 }} 
-                                />
+                {listings.length === 0 && (
+                  <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
+                    <Typography color="text.secondary" sx={{ mb: 2 }}>
+                      You don't have any active listings yet.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      onClick={() => onNavigate('addListing')}
+                      sx={{
+                        borderRadius: '8px',
+                        textTransform: 'none'
+                      }}
+                    >
+                      Create your first listing
+                    </Button>
+                  </Paper>
+                )}
+
+                {listings.length > 0 && (
+                  <Grid container spacing={3}>
+                    {listings.map((car) => (
+                      <Grid item xs={12} key={car.id}>
+                        <Card 
+                          sx={{ 
+                            display: 'flex',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+                          }}
+                        >
+                          <CardMedia
+                            component="img"
+                            sx={{ width: 240, objectFit: 'cover' }}
+                            image={car.image}
+                            alt={`${car.brand} ${car.model}`}
+                          />
+                          <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                            <CardContent sx={{ flex: '1 0 auto' }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
+                                <Box>
+                                  <Typography variant="h6">
+                                    {car.brand} {car.model}
+                                  </Typography>
+                                  <Chip 
+                                    label="Reserved" 
+                                    color="success" 
+                                    size="small" 
+                                    sx={{ mt: 1 }} 
+                                  />
+                                </Box>
                               </Box>
-                            </Box>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                              Reserved on: November 25, 2024
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              Expected delivery: December 5, 2024
-                            </Typography>
-                            <Typography variant="h5" sx={{ color: 'secondary.main', mb: 2 }}>
-                              ${car.price.toLocaleString()}
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                              <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={() => onNavigate('detail', car.id)}
-                                sx={{
-                                  borderRadius: '8px',
-                                  textTransform: 'none'
-                                }}
-                              >
-                                View details
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                color="error"
-                                sx={{
-                                  borderRadius: '8px',
-                                  textTransform: 'none'
-                                }}
-                              >
-                                Cancel reservation
-                              </Button>
-                            </Box>
-                          </CardContent>
-                        </Box>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Reserved on: November 25, 2024
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                Expected delivery: December 5, 2024
+                              </Typography>
+                              <Typography variant="h5" sx={{ color: 'secondary.main', mb: 2 }}>
+                                ${car.price.toLocaleString()}
+                              </Typography>
+                              <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  onClick={() => onNavigate('detail', car.id)}
+                                  sx={{
+                                    borderRadius: '8px',
+                                    textTransform: 'none'
+                                  }}
+                                >
+                                  View details
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  sx={{
+                                    borderRadius: '8px',
+                                    textTransform: 'none'
+                                  }}
+                                >
+                                  Cancel reservation
+                                </Button>
+                              </Box>
+                            </CardContent>
+                          </Box>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
               </Box>
             )}
 

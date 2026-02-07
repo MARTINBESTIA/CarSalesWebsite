@@ -36,7 +36,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
     yearTo: ''
   });
 
-  const popularCars = mockCars.slice(0, 4);
+  const popularCars: typeof mockCars = [];
 
   return (
     <Box>
@@ -45,7 +45,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
         sx={{
           position: 'relative',
           height: '600px',
-          backgroundImage: 'url(https://images.unsplash.com/photo-1605801936998-a39a1518b03c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBjYXJzJTIwZGVhbGVyc2hpcHxlbnwxfHx8fDE3NjQ0NTQ4NjJ8MA&ixlib=rb-4.1.0&q=80&w=1080)',
+          backgroundImage: 'url(https://images.unsplash.com/photo-1489824904134-891ab64532f1?w=1200&h=600&fit=crop)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -263,73 +263,83 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <Typography variant="h3" sx={{ mb: 4, textAlign: 'center' }}>
           Popular Cars
         </Typography>
-        <Grid container spacing={3}>
-          {popularCars.map((car) => (
-            <Grid item xs={12} sm={6} md={3} key={car.id}>
-              <Card 
-                sx={{ 
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
-                  }
-                }}
-              >
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={car.image}
-                  alt={`${car.brand} ${car.model}`}
-                />
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" sx={{ mb: 1 }}>
-                    {car.brand} {car.model}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {car.year}
+
+        {popularCars.length === 0 ? (
+          <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '12px', mb: 4 }}>
+            <Typography color="text.secondary" sx={{ mb: 2 }}>
+              No popular cars available at the moment.
+            </Typography>
+          </Paper>
+        ) : (
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {popularCars.map((car) => (
+              <Grid item xs={12} sm={6} md={3} key={car.id}>
+                <Card 
+                  sx={{ 
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                    }
+                  }}
+                >
+                  <CardMedia
+                    component="img"
+                    height="200"
+                    image={car.image}
+                    alt={`${car.brand} ${car.model}`}
+                  />
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" sx={{ mb: 1 }}>
+                      {car.brand} {car.model}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">•</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {car.mileage.toLocaleString()} mi
+                    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {car.year}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">•</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {car.mileage.toLocaleString()} mi
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">•</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {car.fuel}
+                      </Typography>
+                    </Box>
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        color: 'secondary.main',
+                        mb: 2
+                      }}
+                    >
+                      ${car.price.toLocaleString()}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">•</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {car.fuel}
-                    </Typography>
-                  </Box>
-                  <Typography 
-                    variant="h5" 
-                    sx={{ 
-                      color: 'secondary.main',
-                      mb: 2
-                    }}
-                  >
-                    ${car.price.toLocaleString()}
-                  </Typography>
-                </CardContent>
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button 
-                    fullWidth 
-                    variant="outlined"
-                    onClick={() => onNavigate('detail', car.id)}
-                    sx={{
-                      borderRadius: '8px',
-                      textTransform: 'none'
-                    }}
-                  >
-                    View details
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                  </CardContent>
+                  <CardActions sx={{ p: 2, pt: 0 }}>
+                    <Button 
+                      fullWidth 
+                      variant="outlined"
+                      onClick={() => onNavigate('detail', car.id)}
+                      sx={{
+                        borderRadius: '8px',
+                        textTransform: 'none'
+                      }}
+                    >
+                      View details
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+
         <Box sx={{ textAlign: 'center', mt: 4 }}>
           <Button
             variant="contained"

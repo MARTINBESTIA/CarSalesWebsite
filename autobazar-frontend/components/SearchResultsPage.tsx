@@ -21,7 +21,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { useState } from 'react';
-import { mockCars, bodyTypes, fuelTypes, gearboxTypes, brands } from '../utils/mockData';
+import { bodyTypes, fuelTypes, gearboxTypes, brands } from '../utils/mockData';
 
 interface SearchResultsPageProps {
   onNavigate: (page: string, carId?: number) => void;
@@ -60,9 +60,10 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
     setYearRange([2015, 2025]);
   };
 
+  const mockCars: any[] = [];
   const carsPerPage = 6;
   const totalPages = Math.ceil(mockCars.length / carsPerPage);
-  const displayedCars = mockCars.slice((page - 1) * carsPerPage, page * carsPerPage);
+  const displayedCars = mockCars.length > 0 ? mockCars.slice((page - 1) * carsPerPage, page * carsPerPage) : [];
 
   return (
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
@@ -71,7 +72,7 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
           Search Results
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          {mockCars.length} cars available
+          {mockCars.length === 0 ? 'No cars available' : `${mockCars.length} cars available`}
         </Typography>
 
         <Grid container spacing={3}>
@@ -265,7 +266,7 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
             <Paper sx={{ p: 2, mb: 3, borderRadius: '12px' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography>
-                  Showing {(page - 1) * carsPerPage + 1}-{Math.min(page * carsPerPage, mockCars.length)} of {mockCars.length} results
+                  {mockCars.length === 0 ? 'No results' : `Showing ${(page - 1) * carsPerPage + 1}-${Math.min(page * carsPerPage, mockCars.length)} of ${mockCars.length} results`}
                 </Typography>
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                   <InputLabel>Sort by</InputLabel>
@@ -284,104 +285,113 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
               </Box>
             </Paper>
 
-            <Grid container spacing={3}>
-              {displayedCars.map((car) => (
-                <Grid item xs={12} sm={6} lg={4} key={car.id}>
-                  <Card 
-                    sx={{ 
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
-                      }
-                    }}
-                  >
-                    <Box sx={{ position: 'relative' }}>
-                      <CardMedia
-                        component="img"
-                        height="220"
-                        image={car.image}
-                        alt={`${car.brand} ${car.model}`}
-                      />
-                      {car.verified && (
-                        <Chip
-                          label="Verified"
-                          color="success"
-                          size="small"
-                          sx={{
-                            position: 'absolute',
-                            top: 12,
-                            right: 12,
-                            bgcolor: 'rgba(255, 255, 255, 0.95)'
-                          }}
+            {mockCars.length === 0 ? (
+              <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
+                <Typography color="text.secondary" sx={{ mb: 2 }}>
+                  No cars match your search criteria. Try adjusting your filters.
+                </Typography>
+              </Paper>
+            ) : (
+              <Grid container spacing={3}>
+                {displayedCars.map((car) => (
+                  <Grid item xs={12} sm={6} lg={4} key={car.id}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                        }
+                      }}
+                    >
+                      <Box sx={{ position: 'relative' }}>
+                        <CardMedia
+                          component="img"
+                          height="220"
+                          image={car.image}
+                          alt={`${car.brand} ${car.model}`}
                         />
-                      )}
-                    </Box>
-                    <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-                      <Typography variant="h6" sx={{ mb: 1 }}>
-                        {car.brand} {car.model}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {car.year}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">•</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {car.mileage.toLocaleString()} mi
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">•</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {car.fuel}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">•</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {car.gearbox}
-                        </Typography>
+                        {car.verified && (
+                          <Chip
+                            label="Verified"
+                            color="success"
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: 12,
+                              right: 12,
+                              bgcolor: 'rgba(255, 255, 255, 0.95)'
+                            }}
+                          />
+                        )}
                       </Box>
-                      <Typography 
-                        variant="h5" 
-                        sx={{ 
-                          color: 'secondary.main',
-                          mb: 2
-                        }}
-                      >
-                        ${car.price.toLocaleString()}
-                      </Typography>
-                    </CardContent>
-                    <Box sx={{ p: 2, pt: 0 }}>
-                      <Button 
-                        fullWidth 
-                        variant="contained"
-                        color="primary"
-                        onClick={() => onNavigate('detail', car.id)}
-                        sx={{
-                          borderRadius: '8px',
-                          textTransform: 'none'
-                        }}
-                      >
-                        View car
-                      </Button>
-                    </Box>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+                      <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+                        <Typography variant="h6" sx={{ mb: 1 }}>
+                          {car.brand} {car.model}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                          <Typography variant="body2" color="text.secondary">
+                            {car.year}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">•</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {car.mileage.toLocaleString()} mi
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">•</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {car.fuel}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">•</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {car.gearbox}
+                          </Typography>
+                        </Box>
+                        <Typography 
+                          variant="h5" 
+                          sx={{ 
+                            color: 'secondary.main',
+                            mb: 2
+                          }}
+                        >
+                          ${car.price.toLocaleString()}
+                        </Typography>
+                      </CardContent>
+                      <Box sx={{ p: 2, pt: 0 }}>
+                        <Button 
+                          fullWidth 
+                          variant="contained"
+                          color="primary"
+                          onClick={() => onNavigate('detail', car.id)}
+                          sx={{
+                            borderRadius: '8px',
+                            textTransform: 'none'
+                          }}
+                        >
+                          View car
+                        </Button>
+                      </Box>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
 
-            {/* Pagination */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-              <Pagination 
-                count={totalPages} 
-                page={page} 
-                onChange={(_, value) => setPage(value)}
-                color="primary"
-                size="large"
-              />
-            </Box>
+            {mockCars.length > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Pagination 
+                  count={totalPages} 
+                  page={page} 
+                  onChange={(_, value) => setPage(value)}
+                  color="primary"
+                  size="large"
+                />
+              </Box>
+            )}
           </Grid>
         </Grid>
       </Container>
