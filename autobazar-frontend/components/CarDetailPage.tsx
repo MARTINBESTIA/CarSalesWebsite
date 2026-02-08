@@ -15,12 +15,13 @@ import {
   ListItemText,
   Divider
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { mockCars } from '../utils/mockData';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
 import SpeedIcon from '@mui/icons-material/Speed';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { API_BASE } from '../src/api';
 
 interface CarDetailPageProps {
   carId: number;
@@ -29,11 +30,42 @@ interface CarDetailPageProps {
 export function CarDetailPage({ carId }: CarDetailPageProps) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [images, setImages] = useState<string[]>([]);
+  const [listing, setListing] = useState<any>(null);
 
-  const car = mockCars.find(c => c.id === carId) || mockCars[0];
+  useEffect(() => {
+    function loadImagesAndListing() {
+      fetch(`${API_BASE}/api/listings/${carId}/images`)
+        .then((r) => {
+          if (!r.ok) return [];
+          return r.json();
+        })
+        .then((imgs) => {
+          setImages(imgs && imgs.length > 0 ? imgs : []);
+        })
+        .catch((err) => {
+          console.error('Failed to load images', err);
+          setImages([]);
+        });
 
-  // Mock additional images (using same image for demo)
-  const images = [car.image, car.image, car.image, car.image];
+      fetch(`${API_BASE}/api/listings/${carId}`)
+        .then((r) => {
+          if (!r.ok) return null;
+          return r.json();
+        })
+        .then((data) => setListing(data))
+        .catch((err) => {
+          console.error('Failed to load listing', err);
+          setListing(null);
+        });
+    }
+
+    loadImagesAndListing();
+  }, [carId]);
+
+  const car = listing || mockCars.filter(function(c){ return c.id === carId; })[0] || mockCars[0];
+
+  const gallery = images.length > 0 ? images : [car.image, car.image, car.image, car.image];
 
   return (
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
@@ -43,18 +75,18 @@ export function CarDetailPage({ carId }: CarDetailPageProps) {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Box>
               <Typography variant="h3" sx={{ mb: 1 }}>
-                {car.brand} {car.model}
+                {car.brand ? `${car.brand} ${car.model || ''}` : car.brand || car.carFullName}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LocationOnIcon color="action" fontSize="small" />
                 <Typography color="text.secondary">
-                  {car.location}
+                  {car.location || 'Unknown location'}
                 </Typography>
               </Box>
             </Box>
             <Box sx={{ textAlign: 'right' }}>
               <Typography variant="h3" sx={{ color: 'secondary.main', mb: 1 }}>
-                ${car.price.toLocaleString()}
+                {car.price ? (typeof car.price === 'number' ? `${car.price.toLocaleString()} €` : car.price) : '$0'}
               </Typography>
               <Button 
                 variant="contained" 
@@ -79,7 +111,7 @@ export function CarDetailPage({ carId }: CarDetailPageProps) {
               {/* Main Image */}
               <Box
                 component="img"
-                src={images[selectedImage]}
+                src={gallery[selectedImage]}
                 alt={`${car.brand} ${car.model}`}
                 sx={{
                   width: '100%',
@@ -92,7 +124,7 @@ export function CarDetailPage({ carId }: CarDetailPageProps) {
               
               {/* Thumbnail Gallery */}
               <Grid container spacing={2}>
-                {images.map((img, index) => (
+                {gallery.map((img, index) => (
                   <Grid item xs={3} key={index}>
                     <Box
                       component="img"

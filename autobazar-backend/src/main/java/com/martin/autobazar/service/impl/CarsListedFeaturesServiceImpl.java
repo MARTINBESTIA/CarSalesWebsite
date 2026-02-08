@@ -6,6 +6,7 @@ import com.martin.autobazar.entity.CarsListedFeaturesId;
 import com.martin.autobazar.repository.CarsListedFeaturesRepository;
 import com.martin.autobazar.service.CarsListedFeaturesService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +21,7 @@ public class CarsListedFeaturesServiceImpl implements CarsListedFeaturesService 
     }
 
     @Override
+    @Transactional
     public CarsListedFeatureDto addFeatureToListing(CarsListedFeatureDto dto) {
         if (dto == null || dto.getListingId() == null || dto.getFeatureId() == null) {
             return null;
@@ -45,6 +47,7 @@ public class CarsListedFeaturesServiceImpl implements CarsListedFeaturesService 
     }
 
     @Override
+    @Transactional
     public void deleteByListingId(Long listingId) {
         if (listingId == null) return;
         repository.deleteByIdListingId(listingId);

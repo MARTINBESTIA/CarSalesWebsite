@@ -6,4 +6,5 @@ public interface CarBrandService {
     List<String> getAllBrandNames();
     List<String> findBrandNamesBySubstring(String substr);
     Long getBrandIdByName(String name);
+    String getBrandNameById(Long id);
 }

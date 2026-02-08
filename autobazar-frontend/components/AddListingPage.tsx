@@ -17,13 +17,15 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import dayjs, { Dayjs } from 'dayjs';
+const dayjsLib = (dayjs as any)?.default ?? dayjs;
 import { useState, useEffect } from 'react';
 
 interface AddListingPageProps {
   onNavigate: (page: string, payload?: any) => void;
+  listingId?: number | null;
 }
 
-export function AddListingPage({ onNavigate }: AddListingPageProps) {
+export function AddListingPage({ onNavigate, listingId }: AddListingPageProps) {
   const [formData, setFormData] = useState({
     fullName: '',
     brand: null as string | null,
@@ -126,6 +128,54 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
     return () => clearTimeout(timer);
   }, [featureSearch]);
 
+  // Load listing if editing
+  useEffect(() => {
+    if (!listingId) return;
+    // load listing metadata
+    fetch(`http://localhost:8080/api/listings/${listingId}`)
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load listing');
+        return r.json();
+      })
+      .then((data) => {
+        if (data) {
+          handleChange('fullName', data.carFullName || '');
+          if (data.brandId) {
+            fetch(`http://localhost:8080/api/brands/${data.brandId}`)
+              .then((r) => r.ok ? r.text() : null)
+              .then((name) => { if (name) handleChange('brand', name); })
+              .catch(() => {});
+          }
+          if (data.carFuelTypeId) {
+            fetch(`http://localhost:8080/api/fuel-types/${data.carFuelTypeId}`)
+              .then((r) => r.ok ? r.text() : null)
+              .then((name) => { if (name) handleChange('fuelType', name); })
+              .catch(() => {});
+          }
+          handleChange('price', data.price || '');
+          handleChange('horsePower', data.engineKW || '');
+          handleChange('kilometers', data.kmDrove || '');
+          handleChange('boughtDate', data.boughtDate ? dayjsLib(data.boughtDate) : null);
+        }
+      })
+      .catch((err) => console.error('Could not load listing for edit', err));
+
+    // load existing features for listing
+    fetch(`http://localhost:8080/api/cars-listed-features/listing/${listingId}`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((fv) => {
+        if (Array.isArray(fv)) {
+          // fv are objects { listingId, featureId }
+          // map to features selected by looking up features list later; store ids for now
+          handleChange('features', fv.map((f: any) => ({ featureId: f.featureId })));
+        }
+      })
+      .catch(() => {});
+
+    // load listing images if needed (not mandatory for editing fields)
+    // ...existing
+  }, [listingId]);
+
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -169,7 +219,7 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
         throw new Error('Bought date is required.');
       }
 
-      // Extract userId from localStorage
+      // Get userId from localStorage
       let userId = 1;
       try {
         const raw = localStorage.getItem('userData');
@@ -179,33 +229,20 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
             userId = parsed.id || parsed.userId;
           }
         }
-      } catch (e) {
-        console.warn('Could not parse userData from localStorage, using default userId:', userId);
-      }
+      } catch (e) {}
 
-      // Fetch brandId from new endpoint
+      // resolve brandId and carFuelTypeId same as create flow
       const brandIdRes = await fetch(
         `http://localhost:8080/api/brands/id?name=${encodeURIComponent(String(formData.brand))}`
       );
-      if (!brandIdRes.ok) {
-        throw new Error(`Failed to resolve brand ID for "${formData.brand}". Brand may not exist in database.`);
-      }
+      if (!brandIdRes.ok) throw new Error(`Failed to resolve brand ID for "${formData.brand}"`);
       const brandId = await brandIdRes.json();
-      if (!brandId || typeof brandId !== 'number') {
-        throw new Error(`Invalid brand ID received: ${brandId}`);
-      }
 
-      // Fetch carFuelTypeId from endpoint
       const fuelRes = await fetch(
         `http://localhost:8080/api/fuel-types/id?name=${encodeURIComponent(String(formData.fuelType))}`
       );
-      if (!fuelRes.ok) {
-        throw new Error(`Failed to resolve fuel type ID for "${formData.fuelType}". Fuel type may not exist in database.`);
-      }
+      if (!fuelRes.ok) throw new Error(`Failed to resolve fuel type ID for "${formData.fuelType}"`);
       const carFuelTypeId = await fuelRes.json();
-      if (!carFuelTypeId || typeof carFuelTypeId !== 'number') {
-        throw new Error(`Invalid fuel type ID received: ${carFuelTypeId}`);
-      }
 
       const payload = {
         userId,
@@ -214,86 +251,69 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
         carFullName: formData.fullName.trim(),
         price: Number(formData.price),
         engineKW: Number(formData.horsePower),
-        boughtDate: formData.boughtDate ? dayjs(formData.boughtDate).format('YYYY-MM-DD') : null,
+        boughtDate: formData.boughtDate ? dayjsLib(formData.boughtDate).format('YYYY-MM-DD') : null,
         kmDrove: Number(formData.kilometers)
       };
 
-      console.log('Submitting listing payload:', payload);
-
-      const res = await fetch('http://localhost:8080/api/listings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error('Server response:', res.status, text);
-        throw new Error(`Server error: ${text || res.statusText}`);
-      }
-
-      const result = await res.json();
-      console.log('Listing created successfully:', result);
-
-      const listingId = result?.listingId ?? result?.id;
+      let listingCreatedId = listingId;
       if (!listingId) {
-        throw new Error('Listing created but listingId is missing in response.');
+        // create
+        const res = await fetch('http://localhost:8080/api/listings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Failed to create listing');
+        const result = await res.json();
+        listingCreatedId = result.listingId;
+      } else {
+        // update via PUT
+        const res = await fetch(`http://localhost:8080/api/listings/${listingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error('Failed to update listing: ' + t);
+        }
       }
 
-      const resolveFeatureId = async (feature: any): Promise<number> => {
-        if (feature && typeof feature === 'object') {
-          if (typeof feature.featureId === 'number') return feature.featureId;
-          if (typeof feature.id === 'number') return feature.id;
-        }
+      if (!listingCreatedId) throw new Error('Listing id missing after create/update');
 
-        if (typeof feature === 'string') {
-          const match = features.find((f) => {
-            if (!f || typeof f !== 'object') return false;
-            const name = (f as any).featureName ?? (f as any).name;
-            return name === feature;
-          });
-          if (match) {
-            const id = (match as any).featureId ?? (match as any).id;
-            if (typeof id === 'number') return id;
-          }
-        }
-
-        throw new Error('Could not resolve feature ID from loaded features.');
-      };
+      // Update features: delete existing features for this listing, then re-add selected ones
+      await fetch(`http://localhost:8080/api/cars-listed-features/listing/${listingCreatedId}`, { method: 'DELETE' });
 
       if (formData.features.length > 0) {
-        const featureIds = await Promise.all(formData.features.map(resolveFeatureId));
-        const featurePosts = featureIds.map((featureId) =>
-          fetch('http://localhost:8080/api/cars-listed-features', {
+        const featureIds = await Promise.all(formData.features.map(async (f: any) => {
+          if (typeof f === 'object' && (f.featureId || f.id)) return f.featureId || f.id;
+          if (typeof f === 'string') {
+            // find in loaded features list
+            const match = features.find((x) => (x.featureName === f || x.name === f));
+            return match ? (match.featureId || match.id) : null;
+          }
+          return null;
+        }));
+
+        for (const fid of featureIds) {
+          if (!fid) continue;
+          await fetch('http://localhost:8080/api/cars-listed-features', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ listingId, featureId })
-          })
-        );
-        const featureResponses = await Promise.all(featurePosts);
-        const failed = featureResponses.find((r) => !r.ok);
-        if (failed) {
-          const text = await failed.text();
-          throw new Error(`Failed to attach features: ${text || failed.statusText}`);
+            body: JSON.stringify({ listingId: listingCreatedId, featureId: fid })
+          });
         }
       }
 
-      const uploadFiles: File[] = [mainImage, ...additionalImages].filter(
-        (file): file is File => Boolean(file)
-      );
-
+      // Upload images if any selected
+      const uploadFiles: File[] = [mainImage, ...additionalImages].filter((file): file is File => Boolean(file));
       if (uploadFiles.length > 0) {
-        const formData = new FormData();
-        uploadFiles.forEach((file) => formData.append('files', file));
-
-        const uploadRes = await fetch(
-          `http://localhost:8080/api/listings/${listingId}/images`,
-          {
-            method: 'POST',
-            body: formData
-          }
-        );
-
+        const fd = new FormData();
+        uploadFiles.forEach((file) => fd.append('files', file));
+        const uploadRes = await fetch(`http://localhost:8080/api/listings/${listingCreatedId}/images`, {
+          method: 'POST',
+          body: fd
+        });
         if (!uploadRes.ok) {
           const text = await uploadRes.text();
           throw new Error(`Failed to upload images: ${text || uploadRes.statusText}`);
@@ -301,23 +321,14 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
       }
 
       setSubmitSuccess(true);
-      // Reset form fields
-      setFormData({
-        fullName: '',
-        brand: null,
-        fuelType: null,
-        boughtDate: null,
-        horsePower: '',
-        kilometers: '',
-        price: '',
-        features: []
-      });
-      setMainImage(null);
-      setAdditionalImages([]);
-      setTimeout(() => setSubmitSuccess(false), 4000);
+      setTimeout(() => setSubmitSuccess(false), 3000);
+
+      // Redirect back to dashboard listings
+      onNavigate('dashboard', { section: 'listings' });
+
     } catch (err: any) {
-      console.error('Submit error:', err);
-      setSubmitError(err?.message || 'An error occurred while submitting.');
+      console.error(err);
+      setSubmitError(err?.message || 'An error occurred');
     } finally {
       setSubmitting(false);
     }

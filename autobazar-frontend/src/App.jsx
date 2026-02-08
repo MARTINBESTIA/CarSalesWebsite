@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { NavBar } from '../components/NavBar';
@@ -82,7 +80,7 @@ const theme = createTheme({
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
-  const [selectedCarId, setSelectedCarId] = useState(1);
+  const [selectedCarId, setSelectedCarId] = useState(null);
   const [userData, setUserData] = useState(() => {
     const raw = localStorage.getItem('userData');
     return raw ? JSON.parse(raw) : null;
@@ -107,6 +105,10 @@ export default function App() {
     // Otherwise, if number -> carId
     else if (dataOrCarId !== undefined && typeof dataOrCarId === 'number') {
       setSelectedCarId(dataOrCarId);
+    } else if (page === 'addListing') {
+      // if navigating to addListing without an id, ensure we clear selectedCarId so AddListingPage works as "create"
+      if (typeof dataOrCarId === 'number') setSelectedCarId(dataOrCarId);
+      else setSelectedCarId(null);
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -149,7 +151,7 @@ export default function App() {
           initialSection={dashboardSection}
         />
       )}
-      {currentPage === 'addListing' && <AddListingPage onNavigate={handleNavigate} />}
+      {currentPage === 'addListing' && <AddListingPage onNavigate={handleNavigate} listingId={selectedCarId} />}
     </ThemeProvider>
   );
 }

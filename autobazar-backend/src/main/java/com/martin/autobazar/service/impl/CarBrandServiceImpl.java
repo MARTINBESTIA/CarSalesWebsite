@@ -33,4 +33,10 @@ public class CarBrandServiceImpl implements CarBrandService {
                 .map(b -> b.getBrand_id()) // entity field is brand_id; Lombok generates getBrand_id()
                 .orElse(null);
     }
+
+    @Override
+    public String getBrandNameById(Long id) {
+        if (id == null) return null;
+        return carBrandRepository.findById(id).map(b -> b.getBrandName()).orElse(null);
+    }
 }

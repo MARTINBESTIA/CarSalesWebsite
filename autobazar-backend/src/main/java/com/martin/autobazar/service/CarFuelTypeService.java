@@ -8,4 +8,6 @@ public interface CarFuelTypeService {
 
     // Return id (Long) by exact fuel type name (case-insensitive)
     Long getFuelTypeIdByName(String name);
+
+    String getFuelTypeNameById(Long id);
 }

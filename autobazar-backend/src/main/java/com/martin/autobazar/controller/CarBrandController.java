@@ -44,4 +44,12 @@ public class CarBrandController {
         }
         return new ResponseEntity<>(id, HttpStatus.OK);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<String> getBrandNameById(@PathVariable Long id) {
+        if (id == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        String name = carBrandService.getBrandNameById(id);
+        if (name == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(name, HttpStatus.OK);
+    }
 }

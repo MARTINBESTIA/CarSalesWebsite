@@ -17,12 +17,9 @@ import {
   DialogActions
 } from '@mui/material';
 import { useState, useEffect } from 'react';
-import PersonIcon from '@mui/icons-material/Person';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import EventIcon from '@mui/icons-material/Event';
-import SettingsIcon from '@mui/icons-material/Settings';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { mockCars } from '../utils/mockData';
+import { API_BASE } from '../src/api';
 
 interface DashboardPageProps {
   onNavigate: (page: string, carId?: number) => void;
@@ -46,6 +43,8 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
     email: userData?.email || 'john.doe@example.com',
     phone: userData?.phone || '+1 (555) 123-4567'
   });
+  const [listingsData, setListingsData] = useState<any[]>([]);
+  const [loadingListings, setLoadingListings] = useState(false);
 
   useEffect(() => {
     if (userData) {
@@ -65,64 +64,109 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
   }, [initialSection]);
 
   const savedCars = mockCars.slice(0, 3);
-  const listings: typeof mockCars = [];
 
-  const handleDeleteUser = async () => {
+  // Extract userId helper (same heuristic as AddListingPage)
+  function getLocalUserId(): number {
+    let userId = 1;
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/users/${encodeURIComponent(profileData.email)}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
+      const raw = localStorage.getItem('userData');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.id || parsed.userId)) {
+          userId = parsed.id || parsed.userId;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    return userId;
+  }
+
+  useEffect(() => {
+    function loadListings() {
+      const userId = getLocalUserId();
+      setLoadingListings(true);
+      fetch(`${API_BASE}/api/listings/user/${userId}`)
+        .then((res) => {
+          if (!res.ok) {
+            console.error('Failed to load listings for user', userId);
+            return [];
           }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Delete failed');
-      }
-
-      console.log('User deleted successfully');
-      onNavigate('home');
-    } catch (error) {
-      console.error('Error:', error);
+          return res.json();
+        })
+        .then((data) => setListingsData(data || []))
+        .catch((err) => {
+          console.error('Error fetching listings', err);
+          setListingsData([]);
+        })
+        .finally(() => setLoadingListings(false));
     }
+
+    if (selectedSection === 'listings') {
+      loadListings();
+    }
+  }, [selectedSection]);
+
+  const handleDeleteUser = () => {
+    fetch(`http://localhost:8080/api/users/${encodeURIComponent(profileData.email)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error('Delete failed');
+        console.log('User deleted successfully');
+        onNavigate('home');
+      })
+      .catch((err) => console.error('Error:', err));
   };
 
-  const handleSaveProfile = async () => {
-    try {
-      const payload = {
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        email: profileData.email,
-        phone: profileData.phone,
-        password: ''
-      };
+  const handleSaveProfile = () => {
+    const payload = {
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      email: profileData.email,
+      phone: profileData.phone,
+      password: ''
+    };
 
-      const response = await fetch(
-        `http://localhost:8080/api/users/${encodeURIComponent(profileData.email)}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Update failed');
-      }
-
-      console.log('Profile updated successfully');
-      setIsEditing(false);
-      setSubmitError('');
-    } catch (error) {
-      console.error('Error:', error);
-      setSubmitError('Failed to update profile. Please try again.');
-    }
+    fetch(`http://localhost:8080/api/users/${encodeURIComponent(profileData.email)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error('Update failed');
+        console.log('Profile updated successfully');
+        setIsEditing(false);
+        setSubmitError('');
+      })
+      .catch((err) => {
+        console.error('Error:', err);
+        setSubmitError('Failed to update profile. Please try again.');
+      });
   };
+
+  // New: delete a listing by id (with confirmation)
+  function handleDeleteListing(listingId: number) {
+    const ok = window.confirm('Are you sure you want to delete this listing? This action cannot be undone.');
+    if (!ok) return;
+
+    fetch(`${API_BASE}/api/listings/${listingId}`, {
+      method: 'DELETE'
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to delete listing');
+        // refresh listings
+        const userId = getLocalUserId();
+        return fetch(`${API_BASE}/api/listings/user/${userId}`);
+      })
+      .then((r) => (r && r.ok) ? r.json() : [])
+      .then((data) => setListingsData(data || []))
+      .catch((err) => {
+        console.error('Delete listing error', err);
+        alert('Failed to delete listing. Try again.');
+      });
+  }
 
   return (
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
@@ -303,7 +347,7 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
                         My Listings
                       </Typography>
                       <Typography color="text.secondary">
-                        {listings.length} active listings
+                        {listingsData.length} active listings
                       </Typography>
                     </Box>
                     <Button
@@ -320,7 +364,7 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
                   </Box>
                 </Paper>
 
-                {listings.length === 0 && (
+                {listingsData.length === 0 && !loadingListings && (
                   <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
                     <Typography color="text.secondary" sx={{ mb: 2 }}>
                       You don't have any active listings yet.
@@ -339,72 +383,46 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
                   </Paper>
                 )}
 
-                {listings.length > 0 && (
+                {listingsData.length > 0 && (
                   <Grid container spacing={3}>
-                    {listings.map((car) => (
-                      <Grid item xs={12} key={car.id}>
-                        <Card 
-                          sx={{ 
-                            display: 'flex',
-                            borderRadius: '12px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
-                          }}
-                        >
-                          <CardMedia
-                            component="img"
-                            sx={{ width: 240, objectFit: 'cover' }}
-                            image={car.image}
-                            alt={`${car.brand} ${car.model}`}
-                          />
-                          <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                            <CardContent sx={{ flex: '1 0 auto' }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                                <Box>
-                                  <Typography variant="h6">
-                                    {car.brand} {car.model}
-                                  </Typography>
-                                  <Chip 
-                                    label="Reserved" 
-                                    color="success" 
-                                    size="small" 
-                                    sx={{ mt: 1 }} 
-                                  />
-                                </Box>
-                              </Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                Reserved on: November 25, 2024
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                Expected delivery: December 5, 2024
-                              </Typography>
-                              <Typography variant="h5" sx={{ color: 'secondary.main', mb: 2 }}>
-                                ${car.price.toLocaleString()}
-                              </Typography>
-                              <Box sx={{ display: 'flex', gap: 2 }}>
-                                <Button
-                                  variant="contained"
-                                  color="primary"
-                                  onClick={() => onNavigate('detail', car.id)}
-                                  sx={{
-                                    borderRadius: '8px',
-                                    textTransform: 'none'
-                                  }}
-                                >
-                                  View details
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  color="error"
-                                  sx={{
-                                    borderRadius: '8px',
-                                    textTransform: 'none'
-                                  }}
-                                >
-                                  Cancel reservation
-                                </Button>
-                              </Box>
-                            </CardContent>
+                    {listingsData.map((car: any) => (
+                      <Grid item xs={12} key={car.listingId}>
+                        <Card sx={{ borderRadius: '12px', boxShadow: '0 6px 18px rgba(0,0,0,0.08)', textAlign: 'center' }}>
+                          <Box sx={{ overflow: 'hidden', borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>
+                            <CardMedia
+                              component="img"
+                              image={car.mainImageUrl || '/src/assets/react.svg'}
+                              alt={car.carFullName}
+                              sx={{ width: '100%', height: 200, objectFit: 'cover' }}
+                            />
                           </Box>
+
+                          <CardContent>
+                            <Typography variant="subtitle1" sx={{ mb: 0.5, color: 'text.primary', fontWeight: 600 }}>
+                              {car.carFullName}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              {car.boughtDate || ''} · {car.kmDrove?.toLocaleString() || 0} km
+                            </Typography>
+
+                            <Typography variant="h5" sx={{ color: 'secondary.main', fontWeight: 700, mb: 1 }}>
+                              {car.price?.toLocaleString ? car.price.toLocaleString() + ' €' : car.price + ' €'}
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => onNavigate('addListing', car.listingId)}
+                                sx={{ borderRadius: '8px', textTransform: 'none' }}
+                              >
+                                View details
+                              </Button>
+                              <Button variant="outlined" color="error" sx={{ borderRadius: '8px', textTransform: 'none' }} onClick={() => handleDeleteListing(car.listingId)}>
+                                Remove
+                              </Button>
+                            </Box>
+                          </CardContent>
                         </Card>
                       </Grid>
                     ))}
