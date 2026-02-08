@@ -1,115 +1,86 @@
-# AutoBazar — stručný návod (slovensky)
+# AutoBazar — inštalácia a spustenie
 
-Tento repozitár obsahuje dve hlavné časti aplikácie AutoBazar:
-
-- `autobazar-backend` — backend napísaný v Java (Spring Boot), poskytuje REST API a spravuje persistenciu v MySQL.
-- `autobazar-frontend` — frontend napísaný v React (Vite), zobrazuje inzeráty a komunikuje s backendom cez API.
-
-Cieľ tohto README: rýchlo vysvetliť použité technológie a presne popísať, ako lokálne spustiť databázu, backend a frontend.
-
----
-
-CHECKLIST (čo tento README poskytuje):
-- Popis backend a frontend komponentov ✅
-- Zoznam použitých technológií ✅
-- Presné príkazy na spustenie MySQL (lokálne alebo Docker) ✅
-- Spustenie backendu (Maven wrapper) ✅
-- Spustenie frontendu (npm / Vite) ✅
-
----
-
-Použité technológie
-- Backend: Java + Spring Boot (Spring Web, Spring Data JPA), Maven
-- Databáza: MySQL (použiteľné lokálne alebo v Docker konteineri)
-- Frontend: React (JSX/TS), Vite, MUI / štýly (projekt používa komponenty a vlastné CSS)
-- Build / run: `mvnw.cmd` (backend), `npm` / `vite` (frontend)
+Tento repozitár obsahuje dve samostatné časti:
+- `autobazar-backend` — Spring Boot aplikácia (Java, Spring Boot, Maven), poskytuje REST API pomocou ktorého komunikuje s frontendom, pristupuje k databáze a ukladá obrázky.
+- `autobazar-frontend` — Vite + React frontend (TypeScript/JSX), používateľské rozhranie pre prehliadanie a správu inzerátov.
 
 
-1) Spustenie databázy (MySQL)
+## Požiadavky
+- Java 17+ (alebo verzia, ktorú používa project v `pom.xml`)
+- Maven (môžete použiť zabudovaný `mvnw.cmd` v projekte)
+- Node.js 18+ a npm (pre frontend)
+- PowerShell (Windows: v ponuke je predvolený shell)
 
-Možnosť A — lokálna inštalácia MySQL
-- Nainštalujte MySQL podľa OS a vytvorte databázu (napr. `autobazar`) a používateľa.
-- Skontrolujte `autobazar-backend/src/main/resources/application.properties` a prípadne upravte `spring.datasource.url`, `username`, `password`.
+## 1) Spustenie backendu
 
-Možnosť B — rýchle spustenie s Docker (odporúčané pre vývoj):
+1. Otvorte PowerShell a choďte do adresára backendu:
 
-```powershell
-# spustí MySQL 8 v Docker konteineri (heslo/root a databázu upravte podľa potreby)
-docker run --name autobazar-db -e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=autobazar -e MYSQL_USER=autobazar -e MYSQL_PASSWORD=secret -p 3306:3306 -d mysql:8
+    ```powershell
+    cd 'C:\Users\marti\Desktop\škola\3. ročník\VAII\semestralka\autobazar-backend'
+    ```
 
-# skontrolovať logy
-docker logs -f autobazar-db
-```
+2. Spustite aplikáciu pomocou zabudovaného skriptu Maven wrapper:
 
-Po spustení DB si skontrolujte možné pripojenie (napr. MySQL Workbench, DBeaver alebo `mysql` CLI).
+    ```powershell
+    .\mvnw.cmd spring-boot:run
+    ```
 
-Poznámka: Spring Boot môže pri štarte vytvoriť tabuľky automaticky podľa konfigurácie (`spring.jpa.hibernate.ddl-auto` v `application.properties`).
+    - Aplikácia by mala po pár sekundách/bežných minútach bežať na porte 8080 (ak konfigurácia v `src/main/resources/application.properties` nebola zmenená).
+    - Ak používate priamo Maven (globálne nainštalovaný), môžete použiť `mvn spring-boot:run`.
 
-
-2) Spustenie backendu (Spring Boot)
-
-Predpoklad: MySQL beží a `application.properties` obsahuje správne prihlasovacie údaje.
-
-Otvorte PowerShell v priečinku `autobazar-backend` a spustite:
-
-```powershell
-cd 'C:\Users\marti\Desktop\škola\3. ročník\VAII\semestralka\autobazar-backend'
-.\mvnw.cmd spring-boot:run
-```
-
-Alternatíva (vytvorenie jar a spustenie):
-
-```powershell
-.\mvnw.cmd package -DskipTests
-java -jar target\autobazar-backend-0.0.1-SNAPSHOT.jar
-```
-
-Očakávanie: API bude dostupné na `http://localhost:8080` (ak v `application.properties` nie je zmenený port).
-
-Dôležité miesta v backend projekte:
-- Konfigurácia DB a uploadu: `src/main/resources/application.properties`
-- Kontrolery (REST endpointy): `src/main/java/com/martin/autobazar/controller`
+    Čo skontrolovať ak to neštartuje:
+    - V konzole hľadajte chyby štartu (port busy, chyby DB, chýbajúce env premenné).
+    - Skontrolujte `application.properties` v `src/main/resources` pre konfiguráciu DB, upload priečinka a CORS.
 
 
-3) Spustenie frontendu (Vite + React)
+## 2) Spustenie frontendu
 
-Otvorte nový PowerShell v priečinku `autobazar-frontend` a spustite:
+1. Otvorte nový PowerShell a choďte do adresára frontend:
 
-```powershell
-cd 'C:\Users\marti\Desktop\škola\3. ročník\VAII\semestralka\autobazar-frontend'
-npm install
-npm run dev
-```
+    ```powershell
+    cd 'C:\Users\marti\Desktop\škola\3. ročník\VAII\semestralka\autobazar-frontend'
+    ```
 
-- Vite vypíše lokálnu adresu, zvyčajne `http://localhost:5173`.
-- Frontend používa `autobazar-frontend/src/api.ts` pre konštantu `API_BASE`. Ak backend beží inde než `http://localhost:8080`, upravte tam URL.
+2. Nainštalujte závislosti (ak ešte nie sú):
 
+    ```powershell
+    npm install
+    ```
 
-4) Rýchly test (overenie)
+3. Spustite vývojový server Vite:
 
-Po spustení DB + backend + frontend otvorte v prehliadači frontend URL a skúste:
-- Načítať stránku „Buy a car / Search results“ — frontend vykoná `GET /api/listings/all`.
+    ```powershell
+    npm run dev
+    ```
 
-Ak chcete otestovať API priamo (PowerShell):
+    - Frontend by mal bežať na adrese, ktorú Vite vypíše (štandardne `http://localhost:5173`).
+    - Frontend volá backend cez konštantu `API_BASE` definovanú v `autobazar-frontend/src/api.ts`. Predpokladá sa `http://localhost:8080`.
 
-```powershell
-curl http://localhost:8080/api/brands
-curl http://localhost:8080/api/fuel-types
-curl http://localhost:8080/api/features/pairs
-curl http://localhost:8080/api/listings/all
-```
+    Ak máte backend na inom porte, upravte `autobazar-frontend/src/api.ts`.
 
+## 3) Konfigurácia ukladania obrázkov (ak potrebné)
 
-5) Užitočné tipy a riešenie problémov
-- CORS: frontend bežiaci na porte 5173 vyžaduje povolenie CORS v backend kontroleroch — projekt už obsahuje @CrossOrigin pre niektoré controllery.
-- Ak frontend nevie komunikovať s backendom, skontrolujte `API_BASE` a konzolu (F12 -> Network).
-- Ak backend hlási chyby pripojenia k DB, skontrolujte prístupové údaje a či DB port 3306 je dostupný.
-- Ak nahrávanie obrázkov neukladá súbory, skontrolujte nastavenie upload priečinka v `application.properties` a práva súborového systému.
+- Backend spravuje ukladanie obrázkov do priečinka (skontrolujte `application.properties` pre `app.upload.dir` alebo podobnú property).
+- Ak nahrávanie neukladá obrázky, skontrolujte práva na priečinok a či `app.upload.dir` ukazuje na existujúce miesto.
+- Po nahraní sa obrázky dostupné cez endpointy, ktoré generujú URL (frontend očakáva `mainImageUrl` alebo /api/listings/{id}/images).
 
 
-6) Ďalšie možnosti (voliteľné)
-- Build frontendu na produkciu: `npm run build` v priečinku `autobazar-frontend` (vytvorí `dist/`).
-- Deploy backendu: zabalíte jar (`mvn package`) a nasadíte na server/container.
+## 4) Stručný prehľad užitočných endpointov (backend)
 
+- GET /api/brands — vráti zoznam názvov značiek
+- GET /api/fuel-types — vráti zoznam názvov palív
+- GET /api/features/pairs — vráti pole { featureId, featureName }
+- GET /api/listings/all — vráti všetky inzeráty (frontend ich používa na zobrazenie)
+- GET /api/listings/{id} — detail listingu
+- GET /api/listings/{id}/images — obrázky pre listing
+- DELETE /api/listings/{id} — zmaže listing (backend implementuje mazanie aj s odstránením súvisiacich záznamov a súborov)
+- /api/users/** — operácie s používateľmi (get by id/email, delete, update)
 
-Ak chcete, môžem README ďalej upraviť na mieru (pridať krok seedovania DB s príkladovým SQL, alebo pridať Docker Compose konfiguráciu, ktorá spustí backend + MySQL + frontend). Napíšte, čo preferujete.
+(Uvedené endpointy sú popisované z obsahu projektu a kontrolerov; konkrétne názvy môžu byť mierne rozdielne v závislosti od implementácie — vždy skontrolujte v `src/main/java/*/controller`.
+
+## Dodatkové tipy pre vývojára
+- Ak chcete debugovať priamo backend v IDE (IntelliJ / Eclipse): otvoríte `autobazar-backend` ako Maven projekt a spustíte aplikáciu z triedy s `@SpringBootApplication`.
+- Frontend môžete buildnúť pre produkciu: v `autobazar-frontend` spustite `npm run build`. Výsledné súbory budú v `dist/`.
+- Pre rýchle testovanie endpointov používajte rôzny API client, pravdepodobne postman, ja používam insomnia, pretože môj PC nepodporuje Postmana z nejakého dôvodu
+ alebo `curl`. 
+ - Tak tiež je možné vybudovať spustiteľný jar súbor ktorý potom stačí spustiť na serveri, a prostredníctvom index.html zapnete frontend
