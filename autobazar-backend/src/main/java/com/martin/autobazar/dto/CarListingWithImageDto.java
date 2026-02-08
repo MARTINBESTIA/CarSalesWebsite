@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,4 +23,5 @@ public class CarListingWithImageDto {
     private LocalDate boughtDate;
     private Long kmDrove;
     private String mainImageUrl; // full URL to the main image (or null)
+    private List<Long> featureIds; // list of feature ids associated with this listing
 }

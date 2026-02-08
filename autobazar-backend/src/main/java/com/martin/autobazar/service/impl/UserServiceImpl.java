@@ -111,6 +111,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserDto getUserById(Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return null;
+        return UserMapper.toUserDto(user);
+    }
+
+    @Override
     public boolean validateLogin(String email, String password) {
         return userRepository.existsByEmailAndPassword(email, password);
     }

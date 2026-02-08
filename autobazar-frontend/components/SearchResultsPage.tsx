@@ -20,8 +20,9 @@ import {
   Select,
   MenuItem
 } from '@mui/material';
-import { useState } from 'react';
-import { bodyTypes, fuelTypes, gearboxTypes, brands } from '../utils/mockData';
+import { useState, useEffect } from 'react';
+import { bodyTypes, fuelTypes as mockFuelTypes, gearboxTypes, brands } from '../utils/mockData';
+import { API_BASE } from '../src/api';
 
 interface SearchResultsPageProps {
   onNavigate: (page: string, carId?: number) => void;
@@ -37,6 +38,102 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
   const [yearRange, setYearRange] = useState<number[]>([2015, 2025]);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('recommended');
+  const [allCars, setAllCars] = useState<any[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<number[]>([]);
+  const carsPerPage = 6;
+  const MGrid: any = (Grid as any);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load all listings once
+  useEffect(() => {
+    setIsLoading(true);
+    fetch(`${API_BASE}/api/listings/all`)
+      .then(r => r.ok ? r.json() : [])
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : [];
+        setAllCars(arr);
+
+        // initialize filters so that everything is included by default
+        if (arr.length > 0) {
+          // Price
+          const prices = arr.map((c: any) => (typeof c.price === 'number' ? c.price : (c.price ? Number(c.price) : NaN))).filter((p: number) => !isNaN(p));
+          const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+          const maxPrice = prices.length > 0 ? Math.max(...prices) : 100000;
+          setPriceRange([Math.max(0, minPrice), Math.max(minPrice, maxPrice)]);
+
+          // Mileage (kmDrove)
+          const miles = arr.map((c: any) => (c.kmDrove != null ? Number(c.kmDrove) : NaN)).filter((m: number) => !isNaN(m));
+          const minMiles = miles.length > 0 ? Math.min(...miles) : 0;
+          const maxMiles = miles.length > 0 ? Math.max(...miles) : 100000;
+          setMileageRange([Math.max(0, minMiles), Math.max(minMiles, maxMiles)]);
+
+          // Year range: derive from boughtDate or carFullName
+          const years: number[] = [];
+          arr.forEach((c: any) => {
+            if (c.boughtDate) {
+              const y = new Date(c.boughtDate).getFullYear();
+              if (!isNaN(y)) years.push(y);
+            }
+            if (c.carFullName) {
+              const m = ('' + c.carFullName).match(/(19|20)\d{2}/);
+              if (m) years.push(Number(m[0]));
+            }
+          });
+          const minYear = years.length > 0 ? Math.min(...years) : 2015;
+          const maxYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
+          setYearRange([minYear, maxYear]);
+        }
+      })
+      .catch(err => { console.error('Failed to load listings', err); setAllCars([]); })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Apply filters to allCars
+  const filtered = allCars.filter((c: any) => {
+    // price - allow listings without price to be shown; only filter when numeric
+    const priceVal = (c.price != null && !isNaN(Number(c.price))) ? Number(c.price) : null;
+    if (priceVal != null) {
+      if (priceVal < priceRange[0] || priceVal > priceRange[1]) return false;
+    }
+    // mileage / km (backend uses kmDrove)
+    const kmVal = (c.kmDrove != null && !isNaN(Number(c.kmDrove))) ? Number(c.kmDrove) : (c.mileage != null && !isNaN(Number(c.mileage)) ? Number(c.mileage) : null);
+    if (kmVal != null) {
+      if (kmVal < mileageRange[0] || kmVal > mileageRange[1]) return false;
+    }
+    // year parsing: try to extract year from carFullName or boughtDate
+    if (yearRange && yearRange.length === 2) {
+      let year = null;
+      if (c.boughtDate) {
+        try { year = new Date(c.boughtDate).getFullYear(); } catch(e){}
+      }
+      if (!year && c.carFullName) {
+        const m = c.carFullName.match(/(19|20)\d{2}/);
+        if (m) year = parseInt(m[0]);
+      }
+      if (year) {
+        if (year < yearRange[0] || year > yearRange[1]) return false;
+      }
+    }
+    // fuel type
+    if (selectedFuelTypes.length > 0) {
+      if (!c.carFuelTypeId && !c.fuel) return false;
+      // we compare by name if frontend options are names
+      if (c.carFuelTypeId == null && typeof c.fuel === 'string') {
+        if (!selectedFuelTypes.includes(c.fuel)) return false;
+      }
+    }
+    // features: ensure all selected feature ids are present
+    if (selectedFeatures.length > 0) {
+      const fIds: number[] = c.featureIds || [];
+      for (const fid of selectedFeatures) {
+        if (!fIds.includes(fid)) return false;
+      }
+    }
+    return true;
+  });
+
+  const totalFilteredPages = Math.max(1, Math.ceil(filtered.length / carsPerPage));
+  const displayedFilteredCars = filtered.slice((page - 1) * carsPerPage, page * carsPerPage);
 
   const handleBrandChange = (brand: string) => {
     setSelectedBrands(prev => 
@@ -60,10 +157,15 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
     setYearRange([2015, 2025]);
   };
 
-  const mockCars: any[] = [];
-  const carsPerPage = 6;
-  const totalPages = Math.ceil(mockCars.length / carsPerPage);
-  const displayedCars = mockCars.length > 0 ? mockCars.slice((page - 1) * carsPerPage, page * carsPerPage) : [];
+  if (isLoading) {
+    return (
+      <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 8 }}>
+        <Container maxWidth="xl">
+          <Typography variant="h4" align="center" sx={{ mb: 3 }}>Loading listings...</Typography>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
@@ -72,13 +174,13 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
           Search Results
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          {mockCars.length === 0 ? 'No cars available' : `${mockCars.length} cars available`}
+          {filtered.length === 0 ? 'No cars available' : `${filtered.length} cars available`}
         </Typography>
 
-        <Grid container spacing={3}>
+        <MGrid container spacing={3}>
           {/* Filters Sidebar */}
-          <Grid item xs={12} md={3}>
-            <Paper 
+          <MGrid item xs={12} md={3}>
+            <Paper
               sx={{ 
                 p: 3, 
                 borderRadius: '12px',
@@ -146,7 +248,7 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
                 Fuel Type
               </Typography>
               <FormGroup sx={{ mb: 3 }}>
-                {fuelTypes.map((fuel) => (
+                {mockFuelTypes.map((fuel) => (
                   <FormControlLabel
                     key={fuel}
                     control={
@@ -259,14 +361,14 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
                 </Typography>
               </Box>
             </Paper>
-          </Grid>
+          </MGrid>
 
           {/* Results Grid */}
-          <Grid item xs={12} md={9}>
+          <MGrid item xs={12} md={9}>
             <Paper sx={{ p: 2, mb: 3, borderRadius: '12px' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography>
-                  {mockCars.length === 0 ? 'No results' : `Showing ${(page - 1) * carsPerPage + 1}-${Math.min(page * carsPerPage, mockCars.length)} of ${mockCars.length} results`}
+                  {filtered.length === 0 ? 'No results' : `Showing ${(page - 1) * carsPerPage + 1}-${Math.min(page * carsPerPage, filtered.length)} of ${filtered.length} results`}
                 </Typography>
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                   <InputLabel>Sort by</InputLabel>
@@ -285,17 +387,17 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
               </Box>
             </Paper>
 
-            {mockCars.length === 0 ? (
+            {filtered.length === 0 ? (
               <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '12px' }}>
                 <Typography color="text.secondary" sx={{ mb: 2 }}>
                   No cars match your search criteria. Try adjusting your filters.
                 </Typography>
               </Paper>
             ) : (
-              <Grid container spacing={3}>
-                {displayedCars.map((car) => (
-                  <Grid item xs={12} sm={6} lg={4} key={car.id}>
-                    <Card 
+              <MGrid container spacing={3}>
+                {displayedFilteredCars.map((car) => (
+                  <MGrid item xs={12} sm={6} lg={4} key={car.listingId}>
+                    <Card
                       sx={{ 
                         height: '100%',
                         display: 'flex',
@@ -313,8 +415,8 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
                         <CardMedia
                           component="img"
                           height="220"
-                          image={car.image}
-                          alt={`${car.brand} ${car.model}`}
+                          image={car.mainImageUrl || '/src/assets/react.svg'}
+                          alt={car.carFullName || 'Car image'}
                         />
                         {car.verified && (
                           <Chip
@@ -332,15 +434,24 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
                       </Box>
                       <CardContent sx={{ flexGrow: 1, pb: 1 }}>
                         <Typography variant="h6" sx={{ mb: 1 }}>
-                          {car.brand} {car.model}
+                          {car.carFullName || (car.brand + ' ' + (car.model || ''))}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
                           <Typography variant="body2" color="text.secondary">
-                            {car.year}
+                            {(() => {
+                              // prefer explicit year, else derive from boughtDate or carFullName
+                              if (car.year) return car.year;
+                              if (car.boughtDate) try { return new Date(car.boughtDate).getFullYear(); } catch(e) {}
+                              if (car.carFullName) { const m = (''+car.carFullName).match(/(19|20)\d{2}/); if (m) return m[0]; }
+                              return '';
+                            })()}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">•</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {car.mileage.toLocaleString()} mi
+                            {(() => {
+                              const km = (car.kmDrove != null && !isNaN(Number(car.kmDrove))) ? Number(car.kmDrove) : (car.mileage != null && !isNaN(Number(car.mileage)) ? Number(car.mileage) : null);
+                              return km != null ? km.toLocaleString() : 'N/A';
+                            })()} mi
                           </Typography>
                           <Typography variant="body2" color="text.secondary">•</Typography>
                           <Typography variant="body2" color="text.secondary">
@@ -358,7 +469,7 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
                             mb: 2
                           }}
                         >
-                          ${car.price.toLocaleString()}
+                          {`${car.price != null ? Number(car.price).toLocaleString() : 'N/A'} €`}
                         </Typography>
                       </CardContent>
                       <Box sx={{ p: 2, pt: 0 }}>
@@ -366,7 +477,7 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
                           fullWidth 
                           variant="contained"
                           color="primary"
-                          onClick={() => onNavigate('detail', car.id)}
+                          onClick={() => onNavigate('detail', car.listingId)}
                           sx={{
                             borderRadius: '8px',
                             textTransform: 'none'
@@ -376,24 +487,24 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
                         </Button>
                       </Box>
                     </Card>
-                  </Grid>
+                  </MGrid>
                 ))}
-              </Grid>
+              </MGrid>
             )}
 
-            {mockCars.length > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <Pagination 
-                  count={totalPages} 
-                  page={page} 
-                  onChange={(_, value) => setPage(value)}
-                  color="primary"
-                  size="large"
-                />
-              </Box>
-            )}
-          </Grid>
-        </Grid>
+            {filtered.length > 0 && (
+               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                 <Pagination
+                   count={totalFilteredPages}
+                   page={page}
+                   onChange={(_, value) => setPage(value)}
+                   color="primary"
+                   size="large"
+                 />
+               </Box>
+             )}
+          </MGrid>
+        </MGrid>
       </Container>
     </Box>
   );

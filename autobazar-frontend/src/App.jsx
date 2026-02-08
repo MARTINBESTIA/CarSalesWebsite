@@ -141,7 +141,7 @@ export default function App() {
       
       {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
       {currentPage === 'search' && <SearchResultsPage onNavigate={handleNavigate} />}
-      {currentPage === 'detail' && <CarDetailPage carId={selectedCarId} />}
+      {currentPage === 'detail' && <CarDetailPage carId={selectedCarId} onNavigate={handleNavigate} />}
       {currentPage === 'signin' && <SignInPage onNavigate={handleNavigate} />}
       {currentPage === 'signup' && <SignUpPage onNavigate={handleNavigate} />}
       {currentPage === 'dashboard' && (

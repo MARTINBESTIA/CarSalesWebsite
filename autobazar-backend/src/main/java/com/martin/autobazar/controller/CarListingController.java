@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -159,6 +160,9 @@ public class CarListingController {
         for (CarListing l : list) {
             String mainImageRel = findMainImageForListing(l.getListingId());
             String mainImageFull = mainImageRel != null ? base + "/images/" + mainImageRel : null;
+            List<Long> featureIds = carsListedFeaturesService.findByListingId(l.getListingId()).stream()
+                    .map(fdto -> fdto.getFeatureId())
+                    .collect(Collectors.toList());
             CarListingWithImageDto dto = new CarListingWithImageDto(
                     l.getListingId(),
                     l.getUser() != null ? l.getUser().getUserId() : null,
@@ -169,7 +173,8 @@ public class CarListingController {
                     l.getEngineKW(),
                     l.getBoughtDate(),
                     l.getKmDrove(),
-                    mainImageFull
+                    mainImageFull,
+                    featureIds
             );
             result.add(dto);
         }
@@ -187,6 +192,10 @@ public class CarListingController {
         String mainImageRel = findMainImageForListing(listing.getListingId());
         String mainImageFull = mainImageRel != null ? base + "/images/" + mainImageRel : null;
 
+        List<Long> featureIds = carsListedFeaturesService.findByListingId(listing.getListingId()).stream()
+                .map(fdto -> fdto.getFeatureId())
+                .collect(Collectors.toList());
+
         CarListingWithImageDto dto = new CarListingWithImageDto(
                 listing.getListingId(),
                 listing.getUser() != null ? listing.getUser().getUserId() : null,
@@ -197,7 +206,8 @@ public class CarListingController {
                 listing.getEngineKW(),
                 listing.getBoughtDate(),
                 listing.getKmDrove(),
-                mainImageFull
+                mainImageFull,
+                featureIds
         );
 
         return ResponseEntity.ok(dto);
@@ -301,6 +311,35 @@ public class CarListingController {
                 saved.getKmDrove());
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<CarListingWithImageDto>> getAllListings(HttpServletRequest request) {
+        List<CarListing> list = carListingRepository.findAll();
+        List<CarListingWithImageDto> result = new ArrayList<>();
+        String base = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+        for (CarListing l : list) {
+            String mainImageRel = findMainImageForListing(l.getListingId());
+            String mainImageFull = mainImageRel != null ? base + "/images/" + mainImageRel : null;
+            List<Long> featureIds = carsListedFeaturesService.findByListingId(l.getListingId()).stream()
+                    .map(fdto -> fdto.getFeatureId())
+                    .collect(Collectors.toList());
+            CarListingWithImageDto dto = new CarListingWithImageDto(
+                    l.getListingId(),
+                    l.getUser() != null ? l.getUser().getUserId() : null,
+                    l.getBrand() != null ? l.getBrand().getBrand_id() : null,
+                    l.getCarFuelType() != null ? l.getCarFuelType().getCarFuelTypeId() : null,
+                    l.getCarFullName(),
+                    l.getPrice(),
+                    l.getEngineKW(),
+                    l.getBoughtDate(),
+                    l.getKmDrove(),
+                    mainImageFull,
+                    featureIds
+            );
+            result.add(dto);
+        }
+        return ResponseEntity.ok(result);
     }
 
     private String findMainImageForListing(Long listingId) {

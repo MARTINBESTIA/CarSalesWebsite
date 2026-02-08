@@ -52,33 +52,6 @@ export function NavBar({ onNavigate, currentPage, isLoggedIn, onLogout, onOpenDa
             >
               Buy a car
             </Button>
-            <Button 
-              color="inherit"
-              sx={{ 
-                textTransform: 'none',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
-              }}
-            >
-              How it works
-            </Button>
-            <Button 
-              color="inherit"
-              sx={{ 
-                textTransform: 'none',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
-              }}
-            >
-              Services
-            </Button>
-            <Button 
-              color="inherit"
-              sx={{ 
-                textTransform: 'none',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
-              }}
-            >
-              Contact
-            </Button>
 
             {!isLoggedIn && (
               <Button 

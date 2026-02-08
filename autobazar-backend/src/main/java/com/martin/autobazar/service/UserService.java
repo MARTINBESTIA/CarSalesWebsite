@@ -11,5 +11,6 @@ public interface UserService {
     void deleteUser(String email);
     void updateUser(String email, UserDto userDto);
     UserDto getUserByEmail(String email);
+    UserDto getUserById(Long id);
     boolean validateLogin(String email, String password);
 }

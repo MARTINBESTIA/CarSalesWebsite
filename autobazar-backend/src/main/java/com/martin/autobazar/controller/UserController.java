@@ -1,6 +1,9 @@
 package com.martin.autobazar.controller;
 
 import com.martin.autobazar.dto.UserDto;
+import com.martin.autobazar.entity.User;
+import com.martin.autobazar.mapper.UserMapper;
+import com.martin.autobazar.repository.UserRepository;
 import com.martin.autobazar.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,9 +16,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserRepository userRepository) {
         this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
@@ -62,5 +67,16 @@ public class UserController {
         } else {
             return new ResponseEntity<>(false, HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    @GetMapping("/id/{id}")
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
+        if (id == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        // Use repository + mapper to retrieve user by id
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        UserDto dto = UserMapper.toUserDto(user);
+        dto.setPassword("");
+        return new ResponseEntity<>(dto, HttpStatus.OK);
     }
 }

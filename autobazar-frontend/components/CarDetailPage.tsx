@@ -25,13 +25,15 @@ import { API_BASE } from '../src/api';
 
 interface CarDetailPageProps {
   carId: number;
+  onNavigate?: (page: string, payload?: any) => void;
 }
 
-export function CarDetailPage({ carId }: CarDetailPageProps) {
+export function CarDetailPage({ carId, onNavigate }: CarDetailPageProps) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedImage, setSelectedImage] = useState(0);
   const [images, setImages] = useState<string[]>([]);
   const [listing, setListing] = useState<any>(null);
+  const [seller, setSeller] = useState<any>(null);
 
   useEffect(() => {
     function loadImagesAndListing() {
@@ -63,6 +65,15 @@ export function CarDetailPage({ carId }: CarDetailPageProps) {
     loadImagesAndListing();
   }, [carId]);
 
+  useEffect(() => {
+    if (listing && listing.userId) {
+      fetch(`${API_BASE}/api/users/id/${listing.userId}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((u) => setSeller(u))
+        .catch(() => setSeller(null));
+    }
+  }, [listing]);
+
   const car = listing || mockCars.filter(function(c){ return c.id === carId; })[0] || mockCars[0];
 
   const gallery = images.length > 0 ? images : [car.image, car.image, car.image, car.image];
@@ -88,7 +99,21 @@ export function CarDetailPage({ carId }: CarDetailPageProps) {
               <Typography variant="h3" sx={{ color: 'secondary.main', mb: 1 }}>
                 {car.price ? (typeof car.price === 'number' ? `${car.price.toLocaleString()} €` : car.price) : '$0'}
               </Typography>
-              <Button 
+              <Button
+                variant="contained"
+                color="secondary"
+                size="large"
+                sx={{
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  px: 4,
+                  mr: 2
+                }}
+                onClick={() => onNavigate?.('search')}
+              >
+                Return to listings
+              </Button>
+              <Button
                 variant="contained" 
                 color="secondary"
                 size="large"
@@ -451,33 +476,37 @@ export function CarDetailPage({ carId }: CarDetailPageProps) {
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Contact Seller
                 </Typography>
-                <Button 
-                  fullWidth 
-                  variant="contained"
-                  color="primary"
-                  sx={{ 
-                    mb: 1,
-                    borderRadius: '8px',
-                    textTransform: 'none'
-                  }}
-                >
-                  Call now
-                </Button>
-                <Button 
-                  fullWidth 
-                  variant="outlined"
-                  sx={{ 
-                    borderRadius: '8px',
-                    textTransform: 'none'
-                  }}
-                >
-                  Send message
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
-  );
-}
+                {seller ? (
+                  <Box>
+                    <Typography variant="subtitle1">{seller.firstName} {seller.lastName}</Typography>
+                    <Typography variant="body2" color="text.secondary">{seller.phone}</Typography>
+                    <Typography variant="body2" color="text.secondary">{seller.email}</Typography>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      color="primary"
+                      sx={{ mt: 2, mb: 1, borderRadius: '8px', textTransform: 'none' }}
+                    >
+                      Call now
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      sx={{ borderRadius: '8px', textTransform: 'none' }}
+                    >
+                      Send message
+                    </Button>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Typography color="text.secondary">Seller contact not available.</Typography>
+                  </Box>
+                )}
+               </CardContent>
+             </Card>
+           </Grid>
+         </Grid>
+       </Container>
+     </Box>
+   );
+ }
