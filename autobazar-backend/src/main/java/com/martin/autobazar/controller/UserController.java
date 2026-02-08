@@ -35,10 +35,10 @@ public class UserController {
     @GetMapping("/{email}")
     public ResponseEntity<UserDto> getUserByEmail(@PathVariable String email) {
         UserDto userDto = userService.getUserByEmail(email);
-        userDto.setPassword("");
         if (userDto == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+        userDto.setPassword("");
         return new ResponseEntity<>(userDto, HttpStatus.OK);
     }
 

@@ -49,7 +49,4 @@ public class CarListing {
     @Column(name = "km_drove", nullable = false)
     private Long kmDrove;
 
-    @Column(name = "images_path", nullable = false)
-    private String imagesPath;
-
 }

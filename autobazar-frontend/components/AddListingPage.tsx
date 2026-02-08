@@ -216,8 +216,8 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
               />
             </Grid>
 
-            {/* Fuel Type - Full Width */}
-            <Grid item xs={12}>
+            {/* Fuel Type */}
+            <Grid item xs={12} sm={6}>
               <Autocomplete
                 fullWidth
                 options={fuelTypes}
@@ -293,7 +293,7 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
               />
             </Grid>
 
-            {/* Features - Full Width on Separate Line */}
+            {/* Features */}
             <Grid item xs={12}>
               <Autocomplete
                 fullWidth
