@@ -32,7 +32,7 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
     horsePower: '',
     kilometers: '',
     price: '',
-    features: [] as string[]
+    features: [] as any[]
   });
 
   const [mainImage, setMainImage] = useState<File | null>(null);
@@ -40,7 +40,7 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
 
   const [brands, setBrands] = useState<string[]>([]);
   const [fuelTypes, setFuelTypes] = useState<string[]>([]);
-  const [features, setFeatures] = useState<string[]>([]);
+  const [features, setFeatures] = useState<any[]>([]);
 
   const [brandSearch, setBrandSearch] = useState('');
   const [fuelSearch, setFuelSearch] = useState('');
@@ -108,8 +108,8 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
       setLoadingFeatures(true);
       try {
         const url = featureSearch
-          ? `http://localhost:8080/api/features?q=${encodeURIComponent(featureSearch)}`
-          : 'http://localhost:8080/api/features';
+          ? `http://localhost:8080/api/features/pairs?q=${encodeURIComponent(featureSearch)}`
+          : 'http://localhost:8080/api/features/pairs';
         const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
@@ -234,6 +234,49 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
 
       const result = await res.json();
       console.log('Listing created successfully:', result);
+
+      const listingId = result?.listingId ?? result?.id;
+      if (!listingId) {
+        throw new Error('Listing created but listingId is missing in response.');
+      }
+
+      const resolveFeatureId = async (feature: any): Promise<number> => {
+        if (feature && typeof feature === 'object') {
+          if (typeof feature.featureId === 'number') return feature.featureId;
+          if (typeof feature.id === 'number') return feature.id;
+        }
+
+        if (typeof feature === 'string') {
+          const match = features.find((f) => {
+            if (!f || typeof f !== 'object') return false;
+            const name = (f as any).featureName ?? (f as any).name;
+            return name === feature;
+          });
+          if (match) {
+            const id = (match as any).featureId ?? (match as any).id;
+            if (typeof id === 'number') return id;
+          }
+        }
+
+        throw new Error('Could not resolve feature ID from loaded features.');
+      };
+
+      if (formData.features.length > 0) {
+        const featureIds = await Promise.all(formData.features.map(resolveFeatureId));
+        const featurePosts = featureIds.map((featureId) =>
+          fetch('http://localhost:8080/api/cars-listed-features', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ listingId, featureId })
+          })
+        );
+        const featureResponses = await Promise.all(featurePosts);
+        const failed = featureResponses.find((r) => !r.ok);
+        if (failed) {
+          const text = await failed.text();
+          throw new Error(`Failed to attach features: ${text || failed.statusText}`);
+        }
+      }
 
       setSubmitSuccess(true);
       // Reset form fields
@@ -413,11 +456,15 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
                 inputValue={featureSearch}
                 onInputChange={(_, newInputValue) => setFeatureSearch(newInputValue)}
                 loading={loadingFeatures}
+                getOptionLabel={(option) => {
+                  if (typeof option === 'string') return option;
+                  return (option as any).featureName ?? (option as any).name ?? '';
+                }}
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
                     <Chip
                       variant="outlined"
-                      label={option}
+                      label={typeof option === 'string' ? option : (option as any).featureName ?? (option as any).name}
                       {...getTagProps({ index })}
                       key={index}
                     />

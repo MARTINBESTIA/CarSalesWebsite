@@ -1,5 +1,6 @@
 package com.martin.autobazar.controller;
 
+import com.martin.autobazar.dto.CarListingFeatureDto;
 import com.martin.autobazar.service.CarListingFeatureService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,5 +32,11 @@ public class CarListingFeatureController {
         }
         List<String> names = carListingFeatureService.findFeatureNamesBySubstring(query);
         return new ResponseEntity<>(names, HttpStatus.OK);
+    }
+
+    @GetMapping("/pairs")
+    public ResponseEntity<List<CarListingFeatureDto>> getAllFeaturePairs() {
+        List<CarListingFeatureDto> dtos = carListingFeatureService.getAllFeatureDtos();
+        return new ResponseEntity<>(dtos, HttpStatus.OK);
     }
 }
