@@ -413,6 +413,7 @@ export function DashboardPage({ onNavigate, userData, initialSection }: Dashboar
                               <Button
                                 variant="contained"
                                 color="primary"
+
                                 onClick={() => onNavigate('addListing', car.listingId)}
                                 sx={{ borderRadius: '8px', textTransform: 'none' }}
                               >
