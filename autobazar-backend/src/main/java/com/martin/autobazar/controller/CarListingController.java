@@ -9,9 +9,20 @@ import com.martin.autobazar.repository.CarBrandRepository;
 import com.martin.autobazar.repository.CarFuelTypeRepository;
 import com.martin.autobazar.repository.CarListingRepository;
 import com.martin.autobazar.repository.UserRepository;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 
 @RestController
 @RequestMapping("/api/listings")
@@ -22,6 +33,9 @@ public class CarListingController {
     private final UserRepository userRepository;
     private final CarBrandRepository carBrandRepository;
     private final CarFuelTypeRepository carFuelTypeRepository;
+
+    @Value("${app.upload.dir}")
+    private String uploadDir;
 
     public CarListingController(CarListingRepository carListingRepository, UserRepository userRepository, CarBrandRepository carBrandRepository, CarFuelTypeRepository carFuelTypeRepository) {
         this.carListingRepository = carListingRepository;
@@ -69,5 +83,58 @@ public class CarListingController {
                 saved.getKmDrove());
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping(value = "/{listingId}/images", consumes = "multipart/form-data")
+    public ResponseEntity<?> uploadCarImages(
+            @PathVariable Long listingId,
+            @RequestParam("files") MultipartFile[] files
+    ) throws IOException {
+
+        if (!carListingRepository.existsById(listingId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Listing not found: " + listingId);
+        }
+
+        // uploadDir already points to .../images/listings
+        Path listingFolder = Paths.get(uploadDir)
+                .toAbsolutePath()
+                .normalize()
+                .resolve(String.valueOf(listingId));
+
+        Files.createDirectories(listingFolder);
+
+        System.out.println("Upload dir: " + uploadDir);
+        System.out.println("Listing folder: " + listingFolder);
+        System.out.println("Files received: " + (files == null ? "null" : files.length));
+
+        List<String> savedPaths = new ArrayList<>();
+        if (files == null || files.length == 0) return ResponseEntity.ok(savedPaths);
+
+        int index = 1;
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) continue;
+
+            String original = Objects.requireNonNull(file.getOriginalFilename());
+            String sanitized = original.replaceAll("[^a-zA-Z0-9._-]", "_");
+
+            String ext = "";
+            int dot = sanitized.lastIndexOf('.');
+            if (dot != -1 && dot < sanitized.length() - 1) {
+                ext = sanitized.substring(dot).toLowerCase();
+            }
+
+            String finalName = index + ext;
+            Path target = listingFolder.resolve(finalName);
+
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("Saved file: " + target.toAbsolutePath());
+
+            // relative path from /images
+            savedPaths.add("listings/" + listingId + "/" + finalName);
+            index++;
+        }
+
+        return ResponseEntity.ok(savedPaths);
     }
 }

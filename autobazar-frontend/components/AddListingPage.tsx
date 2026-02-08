@@ -278,6 +278,28 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
         }
       }
 
+      const uploadFiles: File[] = [mainImage, ...additionalImages].filter(
+        (file): file is File => Boolean(file)
+      );
+
+      if (uploadFiles.length > 0) {
+        const formData = new FormData();
+        uploadFiles.forEach((file) => formData.append('files', file));
+
+        const uploadRes = await fetch(
+          `http://localhost:8080/api/listings/${listingId}/images`,
+          {
+            method: 'POST',
+            body: formData
+          }
+        );
+
+        if (!uploadRes.ok) {
+          const text = await uploadRes.text();
+          throw new Error(`Failed to upload images: ${text || uploadRes.statusText}`);
+        }
+      }
+
       setSubmitSuccess(true);
       // Reset form fields
       setFormData({
