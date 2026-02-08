@@ -40,7 +40,7 @@ public class CarListing {
     @Column(nullable = false)
     private Long price;
 
-    @Column(name = "engine_kW", nullable = false)
+    @Column(name = "engine_kw", nullable = false)
     private Long engineKW;
 
     @Column(name = "bought_date", nullable = false)

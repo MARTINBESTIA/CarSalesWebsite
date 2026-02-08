@@ -32,4 +32,16 @@ public class CarFuelTypeController {
         List<String> names = carFuelTypeService.findFuelTypeNamesBySubstring(query);
         return new ResponseEntity<>(names, HttpStatus.OK);
     }
+
+    @GetMapping("/id")
+    public ResponseEntity<Long> getFuelTypeIdByName(@RequestParam(name = "name") String name) {
+        if (name == null || name.isBlank()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        Long id = carFuelTypeService.getFuelTypeIdByName(name);
+        if (id == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(id, HttpStatus.OK);
+    }
 }

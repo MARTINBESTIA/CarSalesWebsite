@@ -51,6 +51,8 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
   const [loadingFeatures, setLoadingFeatures] = useState(false);
 
   const [submitError, setSubmitError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Fetch brands
   useEffect(() => {
@@ -140,13 +142,120 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
     }
   };
 
-  const handleSubmit = () => {
-    // Form submission logic will be added later
-    console.log('Listing submitted:', {
-      formData,
-      mainImage,
-      additionalImages
-    });
+  const handleSubmit = async () => {
+    setSubmitError('');
+    setSubmitting(true);
+    try {
+      // Validate required fields
+      if (!formData.fullName.trim()) {
+        throw new Error('Car full name is required.');
+      }
+      if (!formData.brand) {
+        throw new Error('Brand is required.');
+      }
+      if (!formData.fuelType) {
+        throw new Error('Fuel type is required.');
+      }
+      if (!formData.price || Number(formData.price) <= 0) {
+        throw new Error('Valid price is required.');
+      }
+      if (!formData.horsePower || Number(formData.horsePower) <= 0) {
+        throw new Error('Valid engine power is required.');
+      }
+      if (!formData.kilometers || Number(formData.kilometers) < 0) {
+        throw new Error('Valid kilometers is required.');
+      }
+      if (!formData.boughtDate) {
+        throw new Error('Bought date is required.');
+      }
+
+      // Extract userId from localStorage
+      let userId = 1;
+      try {
+        const raw = localStorage.getItem('userData');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && (parsed.id || parsed.userId)) {
+            userId = parsed.id || parsed.userId;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not parse userData from localStorage, using default userId:', userId);
+      }
+
+      // Fetch brandId from new endpoint
+      const brandIdRes = await fetch(
+        `http://localhost:8080/api/brands/id?name=${encodeURIComponent(String(formData.brand))}`
+      );
+      if (!brandIdRes.ok) {
+        throw new Error(`Failed to resolve brand ID for "${formData.brand}". Brand may not exist in database.`);
+      }
+      const brandId = await brandIdRes.json();
+      if (!brandId || typeof brandId !== 'number') {
+        throw new Error(`Invalid brand ID received: ${brandId}`);
+      }
+
+      // Fetch carFuelTypeId from endpoint
+      const fuelRes = await fetch(
+        `http://localhost:8080/api/fuel-types/id?name=${encodeURIComponent(String(formData.fuelType))}`
+      );
+      if (!fuelRes.ok) {
+        throw new Error(`Failed to resolve fuel type ID for "${formData.fuelType}". Fuel type may not exist in database.`);
+      }
+      const carFuelTypeId = await fuelRes.json();
+      if (!carFuelTypeId || typeof carFuelTypeId !== 'number') {
+        throw new Error(`Invalid fuel type ID received: ${carFuelTypeId}`);
+      }
+
+      const payload = {
+        userId,
+        brandId,
+        carFuelTypeId,
+        carFullName: formData.fullName.trim(),
+        price: Number(formData.price),
+        engineKW: Number(formData.horsePower),
+        boughtDate: formData.boughtDate ? dayjs(formData.boughtDate).format('YYYY-MM-DD') : null,
+        kmDrove: Number(formData.kilometers)
+      };
+
+      console.log('Submitting listing payload:', payload);
+
+      const res = await fetch('http://localhost:8080/api/listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('Server response:', res.status, text);
+        throw new Error(`Server error: ${text || res.statusText}`);
+      }
+
+      const result = await res.json();
+      console.log('Listing created successfully:', result);
+
+      setSubmitSuccess(true);
+      // Reset form fields
+      setFormData({
+        fullName: '',
+        brand: null,
+        fuelType: null,
+        boughtDate: null,
+        horsePower: '',
+        kilometers: '',
+        price: '',
+        features: []
+      });
+      setMainImage(null);
+      setAdditionalImages([]);
+      setTimeout(() => setSubmitSuccess(false), 4000);
+    } catch (err: any) {
+      console.error('Submit error:', err);
+      setSubmitError(err?.message || 'An error occurred while submitting.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -439,6 +548,14 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
               </Grid>
             )}
 
+            {submitSuccess && (
+              <Grid item xs={12}>
+                <Alert severity="success">
+                  Listing published successfully! Your car listing is now live.
+                </Alert>
+              </Grid>
+            )}
+
             {/* Buttons */}
             <Grid item xs={12} sx={{ display: 'flex', gap: 2 }}>
               <Button
@@ -446,13 +563,15 @@ export function AddListingPage({ onNavigate }: AddListingPageProps) {
                 color="secondary"
                 size="large"
                 onClick={handleSubmit}
+                disabled={submitting}
                 sx={{
                   borderRadius: '8px',
                   textTransform: 'none',
-                  px: 4
+                  px: 4,
+                  minWidth: '200px'
                 }}
               >
-                Publish Listing
+                {submitting ? 'Publishing...' : 'Publish Listing'}
               </Button>
               <Button
                 variant="outlined"

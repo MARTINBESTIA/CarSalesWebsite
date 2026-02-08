@@ -25,4 +25,12 @@ public class CarBrandServiceImpl implements CarBrandService {
         if (substr == null) return List.of();
         return carBrandRepository.findBrandNamesBySubstring(substr);
     }
+
+    @Override
+    public Long getBrandIdByName(String name) {
+        if (name == null || name.isBlank()) return null;
+        return carBrandRepository.findByBrandNameIgnoreCase(name)
+                .map(b -> b.getBrand_id()) // entity field is brand_id; Lombok generates getBrand_id()
+                .orElse(null);
+    }
 }

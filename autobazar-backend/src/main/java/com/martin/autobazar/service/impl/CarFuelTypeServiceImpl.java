@@ -25,4 +25,10 @@ public class CarFuelTypeServiceImpl implements CarFuelTypeService {
         if (substr == null) return List.of();
         return carFuelTypeRepository.findFuelTypeNamesBySubstring(substr);
     }
+
+    @Override
+    public Long getFuelTypeIdByName(String name) {
+        if (name == null || name.isBlank()) return null;
+        return carFuelTypeRepository.findFuelTypeIdByName(name);
+    }
 }

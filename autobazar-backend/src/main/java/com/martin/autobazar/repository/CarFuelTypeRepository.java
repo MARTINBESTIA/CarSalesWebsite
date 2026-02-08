@@ -18,4 +18,8 @@ public interface CarFuelTypeRepository extends JpaRepository<CarFuelType, Long> 
     @Query("SELECT c.carFuelTypeName FROM CarFuelType c WHERE LOWER(c.carFuelTypeName) LIKE CONCAT('%', LOWER(:substr), '%')")
     List<String> findFuelTypeNamesBySubstring(@Param("substr") String substr);
 
+    // Return id by exact name (case-insensitive)
+    @Query("SELECT c.carFuelTypeId FROM CarFuelType c WHERE LOWER(c.carFuelTypeName) = LOWER(:name)")
+    Long findFuelTypeIdByName(@Param("name") String name);
+
 }
