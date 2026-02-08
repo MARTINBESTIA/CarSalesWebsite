@@ -21,7 +21,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { bodyTypes, fuelTypes as mockFuelTypes, gearboxTypes, brands } from '../utils/mockData';
+import { bodyTypes as mockBodyTypes } from '../utils/mockData';
 import { API_BASE } from '../src/api';
 
 interface SearchResultsPageProps {
@@ -32,7 +32,6 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedBodyTypes, setSelectedBodyTypes] = useState<string[]>([]);
   const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>([]);
-  const [selectedGearbox, setSelectedGearbox] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<number[]>([0, 100000]);
   const [mileageRange, setMileageRange] = useState<number[]>([0, 100000]);
   const [yearRange, setYearRange] = useState<number[]>([2015, 2025]);
@@ -40,12 +39,32 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
   const [sortBy, setSortBy] = useState('recommended');
   const [allCars, setAllCars] = useState<any[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<number[]>([]);
+  // dynamic filter options loaded from backend
+  const [brandOptions, setBrandOptions] = useState<string[]>([]);
+  const [fuelOptions, setFuelOptions] = useState<string[]>([]);
+  const [featureOptions, setFeatureOptions] = useState<Array<{featureId:number,featureName:string}>>([]);
   const carsPerPage = 6;
   const MGrid: any = (Grid as any);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load all listings once
   useEffect(() => {
+    // load filter options from backend
+    fetch(`${API_BASE}/api/brands`)
+      .then(r => r.ok ? r.json() : [])
+      .then((b:any) => setBrandOptions(Array.isArray(b)?b:[]))
+      .catch(() => setBrandOptions([]));
+
+    fetch(`${API_BASE}/api/fuel-types`)
+      .then(r => r.ok ? r.json() : [])
+      .then((f:any) => setFuelOptions(Array.isArray(f)?f:[]))
+      .catch(() => setFuelOptions([]));
+
+    fetch(`${API_BASE}/api/features/pairs`)
+      .then(r => r.ok ? r.json() : [])
+      .then((ft:any) => setFeatureOptions(Array.isArray(ft)?ft:[]))
+      .catch(() => setFeatureOptions([]));
+
     setIsLoading(true);
     fetch(`${API_BASE}/api/listings/all`)
       .then(r => r.ok ? r.json() : [])
@@ -151,7 +170,6 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
     setSelectedBrands([]);
     setSelectedBodyTypes([]);
     setSelectedFuelTypes([]);
-    setSelectedGearbox([]);
     setPriceRange([0, 100000]);
     setMileageRange([0, 100000]);
     setYearRange([2015, 2025]);
@@ -203,12 +221,12 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
 
               <Divider sx={{ mb: 3 }} />
 
-              {/* Brand Filter */}
+              {/* Brand Filter (from backend) */}
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
                 Brand
               </Typography>
               <FormGroup sx={{ mb: 3 }}>
-                {brands.slice(1, 6).map((brand) => (
+                {brandOptions.map((brand) => (
                   <FormControlLabel
                     key={brand}
                     control={
@@ -225,30 +243,12 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
 
               <Divider sx={{ mb: 3 }} />
 
-              {/* Body Type Filter */}
-              <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                Body Type
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
-                {bodyTypes.map((type) => (
-                  <Chip
-                    key={type}
-                    label={type}
-                    onClick={() => handleBodyTypeChange(type)}
-                    color={selectedBodyTypes.includes(type) ? 'secondary' : 'default'}
-                    variant={selectedBodyTypes.includes(type) ? 'filled' : 'outlined'}
-                  />
-                ))}
-              </Box>
-
-              <Divider sx={{ mb: 3 }} />
-
-              {/* Fuel Type Filter */}
+              {/* Fuel Type Filter (from backend) */}
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
                 Fuel Type
               </Typography>
               <FormGroup sx={{ mb: 3 }}>
-                {mockFuelTypes.map((fuel) => (
+                {fuelOptions.map((fuel) => (
                   <FormControlLabel
                     key={fuel}
                     control={
@@ -267,27 +267,25 @@ export function SearchResultsPage({ onNavigate }: SearchResultsPageProps) {
 
               <Divider sx={{ mb: 3 }} />
 
-              {/* Gearbox Filter */}
+              {/* Features filter (from backend) - uses featureId selection */}
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                Gearbox
+                Features
               </Typography>
-              <FormGroup sx={{ mb: 3 }}>
-                {gearboxTypes.map((gearbox) => (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
+                {featureOptions.map((f) => (
                   <FormControlLabel
-                    key={gearbox}
+                    key={f.featureId}
                     control={
-                      <Checkbox 
-                        checked={selectedGearbox.includes(gearbox)}
-                        onChange={() => setSelectedGearbox(prev => 
-                          prev.includes(gearbox) ? prev.filter(g => g !== gearbox) : [...prev, gearbox]
-                        )}
+                      <Checkbox
+                        checked={selectedFeatures.includes(f.featureId)}
+                        onChange={() => setSelectedFeatures(prev => prev.includes(f.featureId) ? prev.filter(id => id !== f.featureId) : [...prev, f.featureId])}
                         size="small"
                       />
                     }
-                    label={gearbox}
+                    label={f.featureName}
                   />
                 ))}
-              </FormGroup>
+              </Box>
 
               <Divider sx={{ mb: 3 }} />
 

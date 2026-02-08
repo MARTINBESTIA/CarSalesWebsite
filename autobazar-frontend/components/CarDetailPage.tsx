@@ -2,25 +2,14 @@ import {
   Container, 
   Box, 
   Typography, 
-  Button,
   Grid,
   Card,
   CardContent,
-  Chip,
-  Tabs,
-  Tab,
   Paper,
-  List,
-  ListItem,
-  ListItemText,
   Divider
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { mockCars } from '../utils/mockData';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
-import SpeedIcon from '@mui/icons-material/Speed';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { API_BASE } from '../src/api';
 
 interface CarDetailPageProps {
@@ -29,7 +18,6 @@ interface CarDetailPageProps {
 }
 
 export function CarDetailPage({ carId, onNavigate }: CarDetailPageProps) {
-  const [selectedTab, setSelectedTab] = useState(0);
   const [selectedImage, setSelectedImage] = useState(0);
   const [images, setImages] = useState<string[]>([]);
   const [listing, setListing] = useState<any>(null);
@@ -78,76 +66,38 @@ export function CarDetailPage({ carId, onNavigate }: CarDetailPageProps) {
 
   const gallery = images.length > 0 ? images : [car.image, car.image, car.image, car.image];
 
+  // Safe derived values to avoid runtime errors when fields are missing
+  const priceDisplay = (car && car.price != null && !isNaN(Number(car.price))) ? `${Number(car.price).toLocaleString()} €` : 'N/A';
+  const kmVal = (car && car.kmDrove != null && !isNaN(Number(car.kmDrove))) ? Number(car.kmDrove)
+    : (car && car.mileage != null && !isNaN(Number(car.mileage)) ? Number(car.mileage) : null);
+  const kmDisplay = kmVal != null ? `${kmVal.toLocaleString()} mi` : 'N/A';
+  const yearDisplay = (car && car.year) ? car.year : (car && car.boughtDate ? new Date(car.boughtDate).getFullYear() : (car && car.carFullName ? ((''+car.carFullName).match(/(19|20)\d{2}/) || [null])[0] : ''));
+  const gearboxLower = (car && car.gearbox) ? (''+car.gearbox).toLowerCase() : '';
+  const monthlyDisplay = (car && car.price != null && !isNaN(Number(car.price))) ? `${Math.round(Number(car.price) / 60).toLocaleString()}/mo` : 'N/A';
+
   return (
-    <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
-      <Container maxWidth="xl">
-        {/* Header */}
-        <Paper sx={{ p: 3, mb: 3, borderRadius: '12px' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-            <Box>
-              <Typography variant="h3" sx={{ mb: 1 }}>
-                {car.brand ? `${car.brand} ${car.model || ''}` : car.brand || car.carFullName}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LocationOnIcon color="action" fontSize="small" />
-                <Typography color="text.secondary">
-                  {car.location || 'Unknown location'}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="h3" sx={{ color: 'secondary.main', mb: 1 }}>
-                {car.price ? (typeof car.price === 'number' ? `${car.price.toLocaleString()} €` : car.price) : '$0'}
-              </Typography>
-              <Button
-                variant="contained"
-                color="secondary"
-                size="large"
-                sx={{
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  px: 4,
-                  mr: 2
-                }}
-                onClick={() => onNavigate?.('search')}
-              >
-                Return to listings
-              </Button>
-              <Button
-                variant="contained" 
-                color="secondary"
-                size="large"
-                sx={{ 
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  px: 4
-                }}
-              >
-                Reserve car
-              </Button>
-            </Box>
-          </Box>
+    <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 6 }}>
+      <Container maxWidth="lg">
+        {/* Centered Header */}
+        <Paper sx={{ p: 4, mb: 4, borderRadius: '12px', textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ mb: 1 }}>
+            {car.brand ? `${car.brand} ${car.model || ''}` : car.brand || car.carFullName}
+          </Typography>
+          <Typography variant="h5" sx={{ color: 'secondary.main' }}>
+            {priceDisplay}
+          </Typography>
         </Paper>
 
-        <Grid container spacing={3}>
-          {/* Left Column - Images */}
-          <Grid item xs={12} md={8}>
+        <Grid container spacing={4} justifyContent="center">
+          {/* Left: Gallery */}
+          <Grid item xs={12} md={7}>
             <Paper sx={{ p: 3, borderRadius: '12px', mb: 3 }}>
-              {/* Main Image */}
               <Box
                 component="img"
                 src={gallery[selectedImage]}
                 alt={`${car.brand} ${car.model}`}
-                sx={{
-                  width: '100%',
-                  height: '500px',
-                  objectFit: 'cover',
-                  borderRadius: '8px',
-                  mb: 2
-                }}
+                sx={{ width: '100%', height: 520, objectFit: 'cover', borderRadius: '8px', mb: 2 }}
               />
-              
-              {/* Thumbnail Gallery */}
               <Grid container spacing={2}>
                 {gallery.map((img, index) => (
                   <Grid item xs={3} key={index}>
@@ -156,357 +106,53 @@ export function CarDetailPage({ carId, onNavigate }: CarDetailPageProps) {
                       src={img}
                       alt={`Thumbnail ${index + 1}`}
                       onClick={() => setSelectedImage(index)}
-                      sx={{
-                        width: '100%',
-                        height: '100px',
-                        objectFit: 'cover',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        border: selectedImage === index ? '3px solid' : '2px solid transparent',
-                        borderColor: selectedImage === index ? 'secondary.main' : 'transparent',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          opacity: 0.8
-                        }
-                      }}
+                      sx={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: selectedImage === index ? '3px solid' : '2px solid transparent', borderColor: selectedImage === index ? 'secondary.main' : 'transparent' }}
                     />
                   </Grid>
                 ))}
               </Grid>
             </Paper>
-
-            {/* Tabs Section */}
-            <Paper sx={{ borderRadius: '12px' }}>
-              <Tabs 
-                value={selectedTab} 
-                onChange={(_, newValue) => setSelectedTab(newValue)}
-                sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
-              >
-                <Tab label="Overview" sx={{ textTransform: 'none' }} />
-                <Tab label="Technical data" sx={{ textTransform: 'none' }} />
-                <Tab label="History" sx={{ textTransform: 'none' }} />
-                <Tab label="Delivery & Warranty" sx={{ textTransform: 'none' }} />
-              </Tabs>
-
-              <Box sx={{ p: 3 }}>
-                {selectedTab === 0 && (
-                  <Box>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                      Vehicle Overview
-                    </Typography>
-                    <Typography paragraph color="text.secondary">
-                      {car.description}
-                    </Typography>
-                    <Typography paragraph color="text.secondary">
-                      This {car.year} {car.brand} {car.model} is in excellent condition with {car.mileage.toLocaleString()} miles. 
-                      It features a {car.engine} engine with {car.gearbox.toLowerCase()} transmission. 
-                      The vehicle has been well-maintained with complete service records.
-                    </Typography>
-                  </Box>
-                )}
-                
-                {selectedTab === 1 && (
-                  <Box>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                      Technical Specifications
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <List>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Engine" 
-                              secondary={car.engine}
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Power" 
-                              secondary="300 HP"
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Torque" 
-                              secondary="400 Nm"
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Fuel Type" 
-                              secondary={car.fuel}
-                            />
-                          </ListItem>
-                        </List>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <List>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Transmission" 
-                              secondary={car.gearbox}
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Drive Type" 
-                              secondary="AWD"
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="0-60 mph" 
-                              secondary="5.5 seconds"
-                            />
-                          </ListItem>
-                          <ListItem>
-                            <ListItemText 
-                              primary="Fuel Economy" 
-                              secondary="28 MPG combined"
-                            />
-                          </ListItem>
-                        </List>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                )}
-                
-                {selectedTab === 2 && (
-                  <Box>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                      Vehicle History
-                    </Typography>
-                    <List>
-                      <ListItem>
-                        <ListItemText 
-                          primary="Ownership" 
-                          secondary="Single owner from new"
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText 
-                          primary="Accident History" 
-                          secondary="No accidents reported"
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText 
-                          primary="Service Records" 
-                          secondary="Complete service history available"
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText 
-                          primary="Title Status" 
-                          secondary="Clean title"
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText 
-                          primary="Last Service" 
-                          secondary="October 2024 - Full inspection"
-                        />
-                      </ListItem>
-                    </List>
-                  </Box>
-                )}
-                
-                {selectedTab === 3 && (
-                  <Box>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                      Delivery & Warranty
-                    </Typography>
-                    <Typography paragraph color="text.secondary">
-                      <strong>Home Delivery:</strong> We offer free home delivery within 100 miles. 
-                      For longer distances, delivery can be arranged at a competitive rate.
-                    </Typography>
-                    <Typography paragraph color="text.secondary">
-                      <strong>Warranty:</strong> This vehicle comes with a comprehensive 12-month/12,000-mile warranty 
-                      covering major components including engine, transmission, and electrical systems.
-                    </Typography>
-                    <Typography paragraph color="text.secondary">
-                      <strong>Return Policy:</strong> 7-day money-back guarantee if you're not completely satisfied.
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Paper>
           </Grid>
 
-          {/* Right Column - Specs and Contact */}
+          {/* Right: Specs + Contact, centered */}
           <Grid item xs={12} md={4}>
-            {/* Key Specifications Card */}
-            <Card sx={{ mb: 3, borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+            <Card sx={{ mb: 3, borderRadius: '12px', textAlign: 'center', p: 2 }}>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 3 }}>
-                  Key Specifications
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f5f5f5', borderRadius: '8px' }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Year
-                      </Typography>
-                      <Typography>
-                        {car.year}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f5f5f5', borderRadius: '8px' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
-                        <SpeedIcon fontSize="small" color="action" />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Mileage
-                      </Typography>
-                      <Typography>
-                        {car.mileage.toLocaleString()} mi
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f5f5f5', borderRadius: '8px' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
-                        <LocalGasStationIcon fontSize="small" color="action" />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Fuel
-                      </Typography>
-                      <Typography>
-                        {car.fuel}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f5f5f5', borderRadius: '8px' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
-                        <SettingsIcon fontSize="small" color="action" />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Gearbox
-                      </Typography>
-                      <Typography>
-                        {car.gearbox}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 1 }} />
-                    <Box sx={{ p: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Engine
-                      </Typography>
-                      <Typography>
-                        {car.engine}
-                      </Typography>
-                    </Box>
-                    <Divider sx={{ my: 1 }} />
-                    <Box sx={{ p: 1 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Body Type
-                      </Typography>
-                      <Typography>
-                        {car.bodyType}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-
-            {/* Features Card */}
-            <Card sx={{ mb: 3, borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Features
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {car.features.map((feature, index) => (
-                    <Chip 
-                      key={index} 
-                      label={feature}
-                      size="small"
-                      sx={{ borderRadius: '8px' }}
-                    />
-                  ))}
+                <Typography variant="h6" sx={{ mb: 2 }}>Key Specifications</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+                  <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: '8px', width: '100%' }}>
+                    <Typography variant="body2" color="text.secondary">Year</Typography>
+                    <Typography sx={{ mt: 1 }}>{yearDisplay || 'N/A'}</Typography>
+                  </Box>
+                  <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: '8px', width: '100%' }}>
+                    <Typography variant="body2" color="text.secondary">Mileage</Typography>
+                    <Typography sx={{ mt: 1 }}>{kmDisplay}</Typography>
+                  </Box>
+                  <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: '8px', width: '100%' }}>
+                    <Typography variant="body2" color="text.secondary">Fuel</Typography>
+                    <Typography sx={{ mt: 1 }}>{car.fuel || 'N/A'}</Typography>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
 
-            {/* Financing Card */}
-            <Card 
-              sx={{ 
-                borderRadius: '12px', 
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                position: 'sticky',
-                top: 80
-              }}
-            >
+            <Card sx={{ borderRadius: '12px', textAlign: 'center' }}>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Financing Options
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Get pre-approved for financing with rates as low as 3.9% APR.
-                </Typography>
-                <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: '8px', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Estimated monthly payment
-                  </Typography>
-                  <Typography variant="h5" sx={{ color: 'secondary.main' }}>
-                    ${Math.round(car.price / 60).toLocaleString()}/mo
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Based on 60 months at 4.5% APR
-                  </Typography>
-                </Box>
-                <Button 
-                  fullWidth 
-                  variant="outlined"
-                  sx={{ 
-                    mb: 2,
-                    borderRadius: '8px',
-                    textTransform: 'none'
-                  }}
-                >
-                  Get pre-approved
-                </Button>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Contact Seller
-                </Typography>
+                <Typography variant="h6" sx={{ mb: 2 }}>Contact Seller</Typography>
                 {seller ? (
                   <Box>
                     <Typography variant="subtitle1">{seller.firstName} {seller.lastName}</Typography>
                     <Typography variant="body2" color="text.secondary">{seller.phone}</Typography>
                     <Typography variant="body2" color="text.secondary">{seller.email}</Typography>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="primary"
-                      sx={{ mt: 2, mb: 1, borderRadius: '8px', textTransform: 'none' }}
-                    >
-                      Call now
-                    </Button>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      sx={{ borderRadius: '8px', textTransform: 'none' }}
-                    >
-                      Send message
-                    </Button>
                   </Box>
                 ) : (
-                  <Box>
-                    <Typography color="text.secondary">Seller contact not available.</Typography>
-                  </Box>
+                  <Typography color="text.secondary">Seller contact not available.</Typography>
                 )}
-               </CardContent>
-             </Card>
-           </Grid>
-         </Grid>
-       </Container>
-     </Box>
-   );
- }
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
+  );
+}
