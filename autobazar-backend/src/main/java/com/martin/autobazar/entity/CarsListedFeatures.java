@@ -1,6 +1,8 @@
 package com.martin.autobazar.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,15 +15,17 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "cars_listed_features")
-
 public class CarsListedFeatures {
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "listing_id")
-    private CarListing carListing;
 
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "car_listing_feature")
-    private CarListingFeature carListingFeature;
+    @EmbeddedId
+    private CarsListedFeaturesId id;
+
+    // convenience getters
+    public Long getListingId() {
+        return id != null ? id.getListingId() : null;
+    }
+
+    public Long getFeatureId() {
+        return id != null ? id.getFeatureId() : null;
+    }
 }
