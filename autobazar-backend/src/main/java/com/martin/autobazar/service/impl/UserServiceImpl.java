@@ -9,7 +9,6 @@ import com.martin.autobazar.repository.UserRepository;
 import com.martin.autobazar.service.UserService;
 import com.martin.autobazar.service.CarsListedFeaturesService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,25 +27,19 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final CarListingRepository carListingRepository;
     private final CarsListedFeaturesService carsListedFeaturesService;
-    private final PasswordEncoder passwordEncoder;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
 
-    public UserServiceImpl(UserRepository userRepository, CarListingRepository carListingRepository, CarsListedFeaturesService carsListedFeaturesService, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, CarListingRepository carListingRepository, CarsListedFeaturesService carsListedFeaturesService) {
         this.userRepository = userRepository;
         this.carListingRepository = carListingRepository;
         this.carsListedFeaturesService = carsListedFeaturesService;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public UserDto createUser(UserDto userDto) {
         User user = UserMapper.toUser(userDto);
-        // hash password before saving
-        if (user.getPassword() != null && !user.getPassword().isBlank()) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
         User savedUser = userRepository.save(user);
         return UserMapper.toUserDto(savedUser);
     }
@@ -105,18 +98,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void updateUser(String email, UserDto userDto) {
-        // If password present in DTO, hash and save it separately
-        if (userDto.getPassword() != null && !userDto.getPassword().isBlank()) {
-            User existing = userRepository.findByEmail(email);
-            if (existing != null) {
-                existing.setPassword(passwordEncoder.encode(userDto.getPassword()));
-                existing.setFirstName(userDto.getFirstName());
-                existing.setLastName(userDto.getLastName());
-                existing.setPhone(userDto.getPhone());
-                userRepository.save(existing);
-                return;
-            }
-        }
         userRepository.updateUserByEmail(email, userDto.getFirstName(), userDto.getLastName(), userDto.getPhone());
     }
 
@@ -138,12 +119,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean validateLogin(String email, String password) {
-        User u = userRepository.findByEmail(email);
-        if (u == null) return false;
-        try {
-            return passwordEncoder.matches(password, u.getPassword());
-        } catch (Exception ex) {
-            return false;
-        }
+        return userRepository.existsByEmailAndPassword(email, password);
     }
 }
